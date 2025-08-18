@@ -11,19 +11,22 @@ A command-line tool for managing Google Calendar events and availability. Design
 
 ## Installation
 
-
 ### Install the CLI as a user script
 
 1. Build the wheel:
-  ```sh
-  uv build
-  ```
+
+```sh
+uv build
+```
+
 2. Install the wheel as a user script:
-  ```sh
-  uv tool install dist/caltool-0.1.0-py3-none-any.whl
-  ```
+
+```sh
+uv tool install dist/caltool-0.1.0-py3-none-any.whl
+```
 
 After installation, you can run `caltool` from any shell:
+
 ```sh
 caltool --help
 ```
@@ -40,38 +43,20 @@ caltool --help
 
 The first time you run a command, you will be prompted to authenticate and a `token.json` will be created for future use.
 
+## Module Structure
+
+The codebase is organized for clarity and maintainability:
+
+- `src/caltool/cli.py`: Main CLI logic and command definitions.
+- `src/caltool/datetime_utils.py`: Date/time parsing and formatting utilities.
+- `src/caltool/format.py`: Formatting and color helper functions for CLI output.
+- `src/caltool/errors.py`: Centralized error handling utilities.
+- `src/caltool/gcal_client.py`: Google Calendar API interactions.
+- `src/caltool/scheduler.py`: Scheduling logic and free slot calculations.
+
 ## Usage
 
 All commands are available via the `caltool` CLI
-
-### Find Free Time Slots
-
-```sh
-uv run caltool free --start-date 2025-06-24 --end-date 2025-06-24 --pretty
-```
-
-### List Calendars
-
-```sh
-uv run caltool get-calendars
-```
-
-### Show Upcoming Events (with Duration)
-
-```sh
-uv run caltool show-events --start-time "2025-06-24T09:00:00" --end-time "2025-06-24T18:00:00"
-```
-
-The output now includes event durations in a human-readable format, e.g.:
-
-```
-Upcoming Events:
-• Work out (Private)
-  2025-08-18 11:00 - 12:00 (1h 0m)
-
-• Busy (Private)
-  2025-08-18 15:30 - 15:45 (15m)
-```
 
 ## Configuration
 

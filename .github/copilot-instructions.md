@@ -11,11 +11,12 @@ This project is a command-line tool (`calendarcli`) for managing Google Calendar
 
 The tool is designed for productivity, automation, and integration into developer workflows.
 
-## Project Structure
-
 - `main.py`: Entry point for the CLI (may delegate to `src/caltool/cli.py`).
 - `src/caltool/`
-  - `cli.py`: Main CLI logic using `click`. Handles user commands and output formatting.
+  - `cli.py`: Main CLI logic using `click`. Handles user commands and delegates formatting and error handling.
+  - `datetime_utils.py`: Date/time parsing and formatting utilities.
+  - `format.py`: Formatting and color helper functions for CLI output.
+  - `errors.py`: Centralized error handling utilities.
   - `gcal_client.py`: Handles Google Calendar API interactions.
   - `scheduler.py`: Contains scheduling logic, including finding free slots and checking slot durations.
   - `__init__.py`: Package marker.
@@ -33,34 +34,21 @@ The tool is designed for productivity, automation, and integration into develope
 - **Testing**: All new features and bug fixes should include or update tests in `tests/`. Use mocks for external services (e.g., Google API).
 - **Dependency Management**: Use `pyproject.toml` for dependencies. Prefer `uv` for environment management.
 - **CLI Design**: Use `click` for CLI commands. Group related commands and provide helpful `--help` messages.
-- **Separation of Concerns**: Keep CLI, business logic, and API interactions in separate modules.
-- **Error Handling**: Use logging and user-friendly error messages. Avoid exposing stack traces to end users.
-  **Configuration**: Store user config in a platform-standard file (e.g., `~/.config/caltool/config.json`).
-  - Use the `caltool config` command for interactive setup/edit.
-  - Any config value can be overridden by setting an environment variable `CALTOOL_<KEY>` (e.g., `CALTOOL_TIME_ZONE`). Lists should be comma-separated.
-  - All config values are validated for type and presence before running commands. User-friendly error messages are shown for missing/invalid config.
-  - Do not hardcode secrets or credentials.
+- **Separation of Concerns**: Keep CLI, business logic, formatting, and error handling in separate modules.
+- **Error Handling**: Use logging and user-friendly error messages. Use `cli_error` from `errors.py` for consistent CLI error reporting. Avoid exposing stack traces to end users.
+- **Configuration**: Store user config in a platform-standard file (e.g., `~/.config/caltool/config.json`).
 - **Imports**: Use absolute imports within the package. Avoid circular imports.
 - **Version Control**: Do not commit secrets, credentials, or user-specific config. Respect `.gitignore`.
 
 ## Best Practices for Copilot
 
-## Linting and Code Quality
-
-- After any code change, always run `uv run ruff check` to check for linter errors.
-- If errors are found, run `uv run ruff check --fix` to autofix what is possible.
-- For errors not autofixed (e.g., E402, F841), manually move all imports to the top of the file and remove unused variable assignments.
-- Only declare a task complete after all linter errors are resolved and `uv run ruff check` passes with no errors.
-
-## Process Requirement
-
-- Always update `plan.md` after completing a step in the refactor or feature plan.
 - When adding new features, update or add tests in `tests/`.
 - When fixing bugs, add regression tests if possible.
 - When refactoring, ensure all tests pass and code remains modular.
 - When updating dependencies, check for compatibility and update lock files.
 - When editing CLI commands, ensure help messages and options are clear and consistent.
 - When interacting with Google APIs, use mocks in tests to avoid real API calls.
+- When refactoring, update documentation and Copilot instructions to reflect new module structure and responsibilities.
 
 ## Implementation Strategy
 
@@ -70,7 +58,6 @@ instead provide a prompt that can be used to do the changes later.
 
 ## How to Run Tests
 
-- Copilot should run `uv run pytest` to validate changes and test results.
 - Use `uv run pytest` to run all tests.
 - Ensure all tests pass before submitting changes.
 
