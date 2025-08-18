@@ -1,7 +1,12 @@
+
 import json
+import logging
 import os
 
+import click
 from platformdirs import user_config_dir
+
+logger = logging.getLogger("caltool")
 
 APP_NAME = "caltool"
 CONFIG_FILENAME = "config.json"
@@ -20,11 +25,6 @@ DEFAULTS = {
 
 class Config:
     def validate(self):
-        import logging
-
-        import click
-        logger = logging.getLogger("caltool")
-
         required_keys = [
             "CREDENTIALS_FILE",
             "TOKEN_FILE",
@@ -50,15 +50,11 @@ class Config:
             raise click.UsageError("CALENDAR_IDS must be a list.")
 
     def __init__(self, path=CONFIG_PATH):
-        import logging
-        logger = logging.getLogger("caltool")
         self.path = path
         logger.debug(f"Config init: path={self.path}")
         self.data = self.load()
 
     def load(self):
-        import logging
-        logger = logging.getLogger("caltool")
         logger.debug(f"Loading config from {self.path}")
         if os.path.exists(self.path):
             with open(self.path) as f:
@@ -69,8 +65,6 @@ class Config:
         return DEFAULTS.copy()
 
     def save(self):
-        import logging
-        logger = logging.getLogger("caltool")
         logger.debug(f"Saving config to {self.path}: {self.data}")
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         with open(self.path, "w") as f:
@@ -114,8 +108,6 @@ class Config:
         click.echo(click.style(f"Configuration file created at {self.path}", fg="green"))
 
     def get(self, key, default=None):
-        import logging
-        logger = logging.getLogger("caltool")
         env_key = f"CALTOOL_{key.upper()}"
         if env_key in os.environ:
             val = os.environ[env_key]

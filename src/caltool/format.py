@@ -3,10 +3,31 @@ Formatting and color helper functions for calendarcli CLI output.
 """
 import click
 from colorama import Fore, Style
+from tabulate import tabulate
 
-# format_slots_table is still imported from datetime_utils
-from .datetime_utils import format_event_time, format_slots_table
+from .datetime_utils import format_event_time
 
+
+def format_slots_table(free_slots: list) -> str:
+    """Return a formatted table of free slots as a string."""
+    table_data = []
+    for s, e in free_slots:
+        s_formatted = s.strftime("%a %m/%d %I:%M %p")
+        e_formatted = e.strftime("%I:%M %p")
+        table_data.append([
+            Fore.GREEN + s_formatted + Style.RESET_ALL,
+            Fore.GREEN + e_formatted + Style.RESET_ALL,
+            Fore.YELLOW + f"{(e - s).seconds // 60} min" + Style.RESET_ALL,
+        ])
+    return tabulate(
+        table_data,
+        headers=[
+            Fore.CYAN + "Start Time" + Style.RESET_ALL,
+            Fore.CYAN + "End Time" + Style.RESET_ALL,
+            Fore.CYAN + "Total Time" + Style.RESET_ALL,
+        ],
+        tablefmt="grid",
+    )
 
 def pretty_print_slots(free_slots: list):
     """Pretty print the free slots."""
