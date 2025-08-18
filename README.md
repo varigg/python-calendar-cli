@@ -11,16 +11,21 @@ A command-line tool for managing Google Calendar events and availability. Design
 
 ## Installation
 
-Clone the repository and install dependencies using [uv](https://github.com/astral-sh/uv):
 
+### Install the CLI as a user script
+
+1. Build the wheel:
+  ```sh
+  uv build
+  ```
+2. Install the wheel as a user script:
+  ```sh
+  uv tool install dist/caltool-0.1.0-py3-none-any.whl
+  ```
+
+After installation, you can run `caltool` from any shell:
 ```sh
-uv install
-```
-
-Or with pip:
-
-```sh
-pip install -e .
+caltool --help
 ```
 
 ## Google API Credentials Setup
@@ -51,21 +56,43 @@ uv run caltool free --start-date 2025-06-24 --end-date 2025-06-24 --pretty
 uv run caltool get-calendars
 ```
 
-### Show Upcoming Events
+### Show Upcoming Events (with Duration)
 
 ```sh
 uv run caltool show-events --start-time "2025-06-24T09:00:00" --end-time "2025-06-24T18:00:00"
 ```
 
+The output now includes event durations in a human-readable format, e.g.:
+
+```
+Upcoming Events:
+• Work out (Private)
+  2025-08-18 11:00 - 12:00 (1h 0m)
+
+• Busy (Private)
+  2025-08-18 15:30 - 15:45 (15m)
+```
+
 ## Configuration
 
-The tool will look for `.caltool.cfg` in the home directory and create it if it is not found.
-You can edit the file later to change your calendar IDs, time zone, and availability window. Example:
+Configuration is stored in a platform-standard location (e.g., `~/.config/caltool/config.json` on Linux).
+
+### Interactive Setup
+
+Run the following command to interactively set up or edit your configuration:
+
+```sh
+uv run caltool config
+```
+
+You will be prompted for credentials file, token file, time zone, availability window, calendar IDs, and Google API scopes.
+
+Example config file:
 
 ```json
 {
-  "CREDENTIALS_FILE": "credentials.json",
-  "TOKEN_FILE": "token.json",
+  "CREDENTIALS_FILE": "~/.config/caltool/credentials.json",
+  "TOKEN_FILE": "~/.config/caltool/token.json",
   "SCOPES": ["https://www.googleapis.com/auth/calendar"],
   "CALENDAR_IDS": ["primary"],
   "AVAILABILITY_START": "08:00",
@@ -73,6 +100,33 @@ You can edit the file later to change your calendar IDs, time zone, and availabi
   "TIME_ZONE": "America/Los_Angeles"
 }
 ```
+
+### Environment Variable Overrides
+
+Any config value can be overridden by setting an environment variable named `CALTOOL_<KEY>`. For example:
+
+```sh
+export CALTOOL_TIME_ZONE="Europe/London"
+export CALTOOL_CALENDAR_IDS="primary,work"
+```
+
+Lists (like `SCOPES` and `CALENDAR_IDS`) should be comma-separated.
+
+### Error Handling & Validation
+
+If required config values are missing or invalid, the CLI will show a clear error and prompt you to run `caltool config`.
+
+All config values are validated for type and presence before running commands.
+
+### Debug Logging
+
+Enable debug logging for troubleshooting by passing `--debug` to any command:
+
+```sh
+uv run caltool --debug show-events
+```
+
+This will print detailed logs about config loading, API calls, and event formatting to help diagnose issues.
 
 ## Testing
 

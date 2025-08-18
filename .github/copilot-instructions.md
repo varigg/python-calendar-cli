@@ -3,6 +3,7 @@
 ## Project Purpose
 
 This project is a command-line tool (`calendarcli`) for managing Google Calendar events and availability. It allows users to:
+
 - Find free time slots across one or more calendars
 - List available calendars
 - Show upcoming events
@@ -34,12 +35,26 @@ The tool is designed for productivity, automation, and integration into develope
 - **CLI Design**: Use `click` for CLI commands. Group related commands and provide helpful `--help` messages.
 - **Separation of Concerns**: Keep CLI, business logic, and API interactions in separate modules.
 - **Error Handling**: Use logging and user-friendly error messages. Avoid exposing stack traces to end users.
-- **Configuration**: Store user config in a file (e.g., `config.json` or `~/.caltool.cfg`). Do not hardcode secrets or credentials.
+  **Configuration**: Store user config in a platform-standard file (e.g., `~/.config/caltool/config.json`).
+  - Use the `caltool config` command for interactive setup/edit.
+  - Any config value can be overridden by setting an environment variable `CALTOOL_<KEY>` (e.g., `CALTOOL_TIME_ZONE`). Lists should be comma-separated.
+  - All config values are validated for type and presence before running commands. User-friendly error messages are shown for missing/invalid config.
+  - Do not hardcode secrets or credentials.
 - **Imports**: Use absolute imports within the package. Avoid circular imports.
 - **Version Control**: Do not commit secrets, credentials, or user-specific config. Respect `.gitignore`.
 
 ## Best Practices for Copilot
 
+## Linting and Code Quality
+
+- After any code change, always run `uv run ruff check` to check for linter errors.
+- If errors are found, run `uv run ruff check --fix` to autofix what is possible.
+- For errors not autofixed (e.g., E402, F841), manually move all imports to the top of the file and remove unused variable assignments.
+- Only declare a task complete after all linter errors are resolved and `uv run ruff check` passes with no errors.
+
+## Process Requirement
+
+- Always update `plan.md` after completing a step in the refactor or feature plan.
 - When adding new features, update or add tests in `tests/`.
 - When fixing bugs, add regression tests if possible.
 - When refactoring, ensure all tests pass and code remains modular.
@@ -48,12 +63,14 @@ The tool is designed for productivity, automation, and integration into develope
 - When interacting with Google APIs, use mocks in tests to avoid real API calls.
 
 ## Implementation Strategy
-Focus on one file at a time and within a file proceed method by method followed by a holistic analysis of the file. 
+
+Focus on one file at a time and within a file proceed method by method followed by a holistic analysis of the file.
 For each finding come up with a plan to address it. Layout the plan for each file, but do not implement,
 instead provide a prompt that can be used to do the changes later.
 
 ## How to Run Tests
 
+- Copilot should run `uv run pytest` to validate changes and test results.
 - Use `uv run pytest` to run all tests.
 - Ensure all tests pass before submitting changes.
 

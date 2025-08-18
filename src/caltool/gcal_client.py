@@ -11,6 +11,7 @@ from googleapiclient.errors import HttpError
 
 logger = logging.getLogger(__name__)
 
+
 # --- Retry Decorator ---
 def retry_on_exception(max_retries=3, delay=1, allowed_exceptions=(Exception,)):
     def decorator(func):
@@ -19,13 +20,16 @@ def retry_on_exception(max_retries=3, delay=1, allowed_exceptions=(Exception,)):
                 try:
                     return func(*args, **kwargs)
                 except allowed_exceptions as e:
-                    logger.warning(f"Attempt {attempt+1} failed: {e}")
+                    logger.warning(f"Attempt {attempt + 1} failed: {e}")
                     if attempt == max_retries - 1:
                         logger.error(f"All {max_retries} attempts failed.")
                         raise
                     time.sleep(delay)
+
         return wrapper
+
     return decorator
+
 
 class GCalClient:
     """
@@ -40,23 +44,29 @@ class GCalClient:
         self.credentials_file = os.path.expanduser(credentials_file)
         self.token_file = os.path.expanduser(token_file)
         self.scopes = scopes
+        logger.debug(f"GCalClient init: credentials_file={self.credentials_file}, token_file={self.token_file}, scopes={self.scopes}")
         self.service = service or self.authenticate()
 
     def authenticate(self):
         """
         Authenticate the user and create a service object for Google Calendar API.
         """
+        logger.debug(f"Authenticating with credentials_file={self.credentials_file}, token_file={self.token_file}, scopes={self.scopes}")
         creds = None
         if os.path.exists(self.token_file):
+            logger.debug(f"Token file exists: {self.token_file}")
             creds = Credentials.from_authorized_user_file(self.token_file, self.scopes)
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
+                logger.debug("Credentials expired, attempting refresh.")
                 creds.refresh(Request())
             else:
+                logger.debug("No valid credentials, starting OAuth flow.")
                 flow = InstalledAppFlow.from_client_secrets_file(self.credentials_file, self.scopes)
                 creds = flow.run_local_server(port=0)
             with open(self.token_file, "w") as token:
                 token.write(creds.to_json())
+        logger.debug("Google Calendar API client built successfully.")
         return build("calendar", "v3", credentials=creds)
 
     @retry_on_exception(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
@@ -75,7 +85,9 @@ class GCalClient:
             raise
 
     @retry_on_exception(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
-    def get_day_busy_times(self, calendar_ids: list, day_start: datetime.datetime, day_end: datetime.datetime, timezone: str) -> list:
+    def get_day_busy_times(
+        self, calendar_ids: list, day_start: datetime.datetime, day_end: datetime.datetime, timezone: str
+    ) -> list:
         """Get busy times for a specific day within availability hours."""
         logger.debug(f"Fetching busy times between {day_start} and {day_end}")
         body = {

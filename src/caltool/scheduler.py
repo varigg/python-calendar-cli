@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
+
 class Scheduler:
     """
     A class to manage scheduling and finding free time slots in Google Calendar.

@@ -9,7 +9,68 @@ from click.testing import CliRunner
 from caltool.cli import cli
 from caltool.gcal_client import GCalClient
 from caltool.scheduler import Scheduler
+from src.caltool.config import Config
 
+
+def test_get_calendars_missing_credentials(tmp_path):
+    from src.caltool.cli import get_calendars
+
+    config = {
+        "CREDENTIALS_FILE": str(tmp_path / "missing_credentials.json"),
+        "TOKEN_FILE": str(tmp_path / "token.json"),
+        "SCOPES": ["https://www.googleapis.com/auth/calendar"],
+    }
+    with pytest.raises(SystemExit):
+        get_calendars(config)
+
+
+def test_get_calendars_missing_token(tmp_path):
+    from src.caltool.cli import get_calendars
+
+    cred_file = tmp_path / "credentials.json"
+    cred_file.write_text("{}")
+    config = {
+        "CREDENTIALS_FILE": str(cred_file),
+        "TOKEN_FILE": str(tmp_path / "missing_token.json"),
+        "SCOPES": ["https://www.googleapis.com/auth/calendar"],
+    }
+    with pytest.raises(SystemExit):
+        get_calendars(config)
+
+
+def test_get_calendars_invalid_scopes(tmp_path):
+    from src.caltool.cli import get_calendars
+
+    cred_file = tmp_path / "credentials.json"
+    token_file = tmp_path / "token.json"
+    cred_file.write_text("{}")
+    token_file.write_text("{}")
+    config = {
+        "CREDENTIALS_FILE": str(cred_file),
+        "TOKEN_FILE": str(token_file),
+        "SCOPES": "notalist",
+    }
+    with pytest.raises(SystemExit):
+        get_calendars(config)
+
+
+def test_get_calendars_auth_error(tmp_path):
+    from src.caltool.cli import get_calendars
+
+    cred_file = tmp_path / "credentials.json"
+    token_file = tmp_path / "token.json"
+    cred_file.write_text("{}")
+    token_file.write_text("{}")
+    config = {
+        "CREDENTIALS_FILE": str(cred_file),
+        "TOKEN_FILE": str(token_file),
+        "SCOPES": ["https://www.googleapis.com/auth/calendar"],
+    }
+    with patch("src.caltool.cli.GCalClient") as mock_client:
+        instance = mock_client.return_value
+        instance.get_calendar_list.side_effect = Exception("invalid_scope")
+        with pytest.raises(SystemExit):
+            get_calendars(config)
 
 def clean_cli_output(output):
     """Helper to strip ANSI codes, config messages, and empty lines from CLI output."""
@@ -51,26 +112,38 @@ def scheduler():
         end_time=availability_end.strftime("%H:%M"),
         duration=duration_minutes,
         timezone=time_zone,
-        calendar_ids=["primary"]
+        calendar_ids=["primary"],
     )
 
 
-@pytest.mark.parametrize("start,end,duration,expected", [
-    (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 8, 30), 30, True),
-    (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 8, 15), 30, False),
-    (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 9, 0), 30, True),
-    (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 3, 8, 0), 30, True),
-])
+@pytest.mark.parametrize(
+    "start,end,duration,expected",
+    [
+        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 8, 30), 30, True),
+        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 8, 15), 30, False),
+        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 9, 0), 30, True),
+        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 3, 8, 0), 30, True),
+    ],
+)
 def test_is_slot_long_enough(scheduler, start, end, duration, expected):
     assert scheduler.is_slot_long_enough(start, end, duration) == expected
 
 
-@pytest.mark.parametrize("busy,expected_count", [
-    ([], 1),
-    ([{"start": "2025-05-02T09:00:00-07:00", "end": "2025-05-02T10:00:00-07:00"}], 2),
-    ([{"start": "2025-05-02T08:00:00-07:00", "end": "2025-05-02T18:00:00-07:00"}], 0),
-    ([{"start": "2025-05-02T08:00:00-07:00", "end": "2025-05-02T09:00:00-07:00"}, {"start": "2025-05-02T17:00:00-07:00", "end": "2025-05-02T18:00:00-07:00"}], 1),
-])
+@pytest.mark.parametrize(
+    "busy,expected_count",
+    [
+        ([], 1),
+        ([{"start": "2025-05-02T09:00:00-07:00", "end": "2025-05-02T10:00:00-07:00"}], 2),
+        ([{"start": "2025-05-02T08:00:00-07:00", "end": "2025-05-02T18:00:00-07:00"}], 0),
+        (
+            [
+                {"start": "2025-05-02T08:00:00-07:00", "end": "2025-05-02T09:00:00-07:00"},
+                {"start": "2025-05-02T17:00:00-07:00", "end": "2025-05-02T18:00:00-07:00"},
+            ],
+            1,
+        ),
+    ],
+)
 def test_get_free_slots_for_day(scheduler, busy, expected_count):
     tz = ZoneInfo("America/Los_Angeles")
     day_start = datetime.datetime(2025, 5, 2, 8, 0, tzinfo=tz)
@@ -85,17 +158,36 @@ def test_free_command(mock_gcal, busy_times):
     mock_client.get_day_busy_times.return_value = busy_times
     mock_gcal.return_value = mock_client
     runner = CliRunner()
+    # Create a mock config object
+    config_data = {
+        "CREDENTIALS_FILE": "creds.json",
+        "TOKEN_FILE": "token.json",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
     result = runner.invoke(
         cli,
         [
             "free",
-            "--start-date", "2025-05-02",
-            "--end-date", "2025-05-03",
-            "--duration", "30",
-            "--availability-start", "08:00:00",
-            "--availability-end", "18:00:00",
-            "--timezone", "America/Los_Angeles",
+            "--start-date",
+            "2025-05-02",
+            "--end-date",
+            "2025-05-03",
+            "--duration",
+            "30",
+            "--availability-start",
+            "08:00",
+            "--availability-end",
+            "18:00",
+            "--timezone",
+            "America/Los_Angeles",
         ],
+        obj=mock_config,
     )
     assert result.exit_code == 0
     output = clean_cli_output(result.output)
@@ -110,7 +202,18 @@ def test_get_calendars_command(mock_gcal, calendar_data):
     mock_client.get_calendar_list.return_value = calendar_data
     mock_gcal.return_value = mock_client
     runner = CliRunner()
-    result = runner.invoke(cli, ["get-calendars"])
+    config_data = {
+        "CREDENTIALS_FILE": "creds.json",
+        "TOKEN_FILE": "token.json",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
+    result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
     assert result.exit_code == 0
     output = clean_cli_output(result.output)
     assert "My Calendar" in output
@@ -130,3 +233,14 @@ def test_gcalclient_injection():
     events = client.get_events("primary")
     assert events[0]["id"] == 1
     assert events[0]["calendarId"] == "primary"
+
+def test_config_prompt_asks_for_scopes():
+    from src.caltool.config import Config
+    prompts = []
+    def fake_prompt(text, default=None):
+        prompts.append(text)
+        return default or ""
+    config = Config()
+    with patch("click.prompt", side_effect=fake_prompt):
+        config.prompt()
+    assert any("scope" in p.lower() for p in prompts), "Config.prompt should ask for scopes"

@@ -1,16 +1,52 @@
 import datetime
-import json
 import logging
 import os
-from functools import wraps
 from zoneinfo import ZoneInfo
 
 import click
 from colorama import Fore, Style
 from tabulate import tabulate
 
+from .config import Config
 from .gcal_client import GCalClient
 from .scheduler import Scheduler
+
+
+def cli_error(message: str, suggestion: str = "", abort: bool = True):
+    """Consistent CLI error reporting."""
+    import click
+    click.echo(click.style(message, fg="red"))
+    if suggestion:
+        click.echo(click.style(suggestion, fg="yellow"))
+    if abort:
+        raise click.Abort()
+
+# --- Unified CLI Group ---
+@click.group()
+@click.option("--debug", is_flag=True, help="Enable debug logging for troubleshooting.")
+@click.pass_context
+def cli(ctx, debug):
+    """Calendar CLI tool for managing Google Calendar availability and events."""
+    if debug:
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Debug logging enabled")
+    # Load config once and pass as obj
+    config = Config()
+    try:
+        config.validate()
+    except Exception as e:
+        click.echo(click.style(f"Config error: {e}", fg="red"))
+        raise click.Abort()
+    ctx.obj = config
+
+@cli.command("config")
+@click.pass_obj
+def config_cmd(config):
+    """Interactively set up or edit your calendarcli configuration."""
+    click.echo(click.style("Starting interactive config setup...", fg="cyan"))
+    config.prompt()
+    config.save()
+    click.echo(click.style("Configuration saved.", fg="green"))
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -18,8 +54,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
-
-DEFAULT_CONFIG_FILE = os.path.expanduser("~/.caltool.cfg")
 
 # --- Formatting helpers ---
 def format_slots_table(free_slots: list) -> str:
@@ -50,24 +84,6 @@ def pretty_print_slots(free_slots: list):
     print(format_slots_table(free_slots))
     print(Fore.YELLOW + "=" * 50 + Style.RESET_ALL)
 
-# --- Config decorator/context ---
-def require_config(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not os.path.exists(DEFAULT_CONFIG_FILE):
-            if click.confirm("Would you like to create a new config file?", default=True):
-                prompt_for_config()
-            else:
-                click.echo(click.style("Configuration file is required.", fg="red"))
-                raise click.Abort()
-        try:
-            with open("config.json") as config_file:
-                config = json.load(config_file)
-        except Exception as e:
-            click.echo(click.style(f"Error loading config.json: {e}", fg="red"))
-            raise click.Abort()
-        return func(config, *args, **kwargs)
-    return wrapper
 
 # --- Time parsing helper ---
 def parse_datetime_option(value, default=None):
@@ -85,12 +101,31 @@ def get_calendar_colors(calendar_ids):
 
 def format_event_time(event, config):
     """Format the start and end time of an event as a string."""
-    start = event["start"].get("dateTime", event["start"].get("date"))
-    end = event["end"].get("dateTime", event["end"].get("date"))
+    start = event["start"].get("dateTime") or event["start"].get("date")
+    end = event["end"].get("dateTime") or event["end"].get("date")
     try:
-        start_dt = datetime.datetime.fromisoformat(start.replace("Z", "+00:00")).astimezone(ZoneInfo(config["TIME_ZONE"]))
-        end_dt = datetime.datetime.fromisoformat(end.replace("Z", "+00:00")).astimezone(ZoneInfo(config["TIME_ZONE"]))
-        return f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')}"
+        # Handle all-day events (date only)
+        if "T" not in start:
+            start_dt = datetime.datetime.fromisoformat(start)
+        else:
+            start_dt = datetime.datetime.fromisoformat(start.replace("Z", "+00:00"))
+        if "T" not in end:
+            end_dt = datetime.datetime.fromisoformat(end)
+        else:
+            end_dt = datetime.datetime.fromisoformat(end.replace("Z", "+00:00"))
+        # Convert to local timezone if possible
+        try:
+            tz = ZoneInfo(config["TIME_ZONE"])
+            start_dt = start_dt.astimezone(tz)
+            end_dt = end_dt.astimezone(tz)
+        except Exception:
+            pass
+        duration = end_dt - start_dt
+        total_minutes = int(duration.total_seconds() // 60)
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        duration_str = f" ({hours}h {minutes}m)" if hours else f" ({minutes}m)"
+        return f"{start_dt.strftime('%Y-%m-%d %H:%M')} - {end_dt.strftime('%H:%M')}{duration_str}"
     except Exception:
         return f"{start} - {end}"
 
@@ -104,17 +139,11 @@ def format_event(event, calendar_colors, config):
     lines = [f"• {click.style(summary, fg=calendar_color, bold=True)}"]
     if event.get("location"):
         lines.append(f"    {click.style('location: ' + event['location'], fg='blue')}")
-    lines.append(f"    {click.style(format_event_time(event, config), fg='yellow')}")
+    # Always show formatted event time with duration
+    event_time_str = format_event_time(event, config)
+    lines.append(f"    {click.style(event_time_str, fg='yellow')}")
     lines.append("")  # Blank line between events
     return lines
-
-@click.group()
-@click.option("--debug", is_flag=True, help="Enable debug logging for troubleshooting.")
-def cli(debug):
-    """Calendar CLI tool for managing Google Calendar availability and events."""
-    if debug:
-        logger.setLevel(logging.DEBUG)
-        logger.debug("Debug logging enabled")
 
 @cli.command(help="Find free time slots in your calendar(s).")
 @click.option("--start-date", help="Start date for checking availability (YYYY-MM-DD).", required=True)
@@ -124,23 +153,23 @@ def cli(debug):
 @click.option("--availability-end", help="End time for availability (HH:MM).", required=False)
 @click.option("--timezone", help="Time zone for the availability hours.", required=False)
 @click.option("--pretty", is_flag=True, help="Pretty print the output.")
-@require_config
+@click.pass_obj
 def free(config, start_date, end_date, duration, availability_start, availability_end, timezone, pretty):
     try:
         client = GCalClient(
-            os.path.expanduser(config["CREDENTIALS_FILE"]),
-            os.path.expanduser(config["TOKEN_FILE"]),
-            config["SCOPES"],
+            os.path.expanduser(config.get("CREDENTIALS_FILE")),
+            os.path.expanduser(config.get("TOKEN_FILE")),
+            config.get("SCOPES"),
         )
         scheduler = Scheduler(
-            calendar_ids=config["CALENDAR_IDS"],
+            calendar_ids=config.get("CALENDAR_IDS"),
             client=client,
             start_date=start_date,
             end_date=end_date,
             duration=duration,
-            start_time=availability_start if availability_start else config["AVAILABILITY_START"],
-            end_time=availability_end if availability_end else config["AVAILABILITY_END"],
-            timezone=timezone if timezone else config["TIME_ZONE"],
+            start_time=availability_start if availability_start else config.get("AVAILABILITY_START"),
+            end_time=availability_end if availability_end else config.get("AVAILABILITY_END"),
+            timezone=timezone if timezone else config.get("TIME_ZONE"),
         )
         free_slots = scheduler.get_free_slots()
         if pretty:
@@ -151,17 +180,22 @@ def free(config, start_date, end_date, duration, availability_start, availabilit
                 e_formatted = e.strftime("%I:%M %p")
                 print(f"{s_formatted} - {e_formatted}")
     except Exception as e:
-        click.echo(click.style(f"Error: {e}", fg="red"))
+        import google.auth.exceptions
+        if isinstance(e, google.auth.exceptions.GoogleAuthError) or "invalid_scope" in str(e):
+            click.echo(click.style("Google authentication failed. Please check your credentials, token, and SCOPES in config.", fg="red"))
+            click.echo(click.style("Run 'caltool config' to set up or update your configuration.", fg="yellow"))
+        else:
+            click.echo(click.style(f"Error: {e}", fg="red"))
         raise click.Abort()
 
 @cli.command(help="List all available calendars.")
-@require_config
+@click.pass_obj
 def get_calendars(config):
     try:
         client = GCalClient(
-            config["CREDENTIALS_FILE"],
-            config["TOKEN_FILE"],
-            config["SCOPES"],
+            config.get("CREDENTIALS_FILE"),
+            config.get("TOKEN_FILE"),
+            config.get("SCOPES"),
         )
         calendars = client.get_calendar_list()
         print(Fore.CYAN + "Available Calendars:" + Style.RESET_ALL)
@@ -185,63 +219,42 @@ def get_calendars(config):
             )
         )
     except Exception as e:
-        click.echo(click.style(f"Error: {e}", fg="red"))
-        raise click.Abort()
+        import google.auth.exceptions
+        if isinstance(e, google.auth.exceptions.GoogleAuthError) or "invalid_scope" in str(e):
+            click.echo(click.style("Google authentication failed. Please check your credentials, token, and SCOPES in config.", fg="red"))
+            click.echo(click.style("Run 'caltool config' to set up or update your configuration.", fg="yellow"))
+    # All errors are now handled by cli_error
 
 @cli.command(help="Show upcoming events from all calendars.")
 @click.option("--start-time", help="Start time for fetching events (ISO format).", required=False)
 @click.option("--end-time", help="End time for fetching events (ISO format).", required=False)
-@require_config
+@click.pass_obj
 def show_events(config, start_time, end_time):
     """Show upcoming events from all calendars in a readable format."""
     try:
         client = GCalClient(
-            config["CREDENTIALS_FILE"],
-            config["TOKEN_FILE"],
-            config["SCOPES"],
+            config.get("CREDENTIALS_FILE"),
+            config.get("TOKEN_FILE"),
+            config.get("SCOPES"),
         )
         start_time_dt = parse_datetime_option(start_time)
         end_time_dt = parse_datetime_option(end_time, default=datetime.datetime.now() + datetime.timedelta(hours=8))
         events = []
-        for calendar_id in config["CALENDAR_IDS"]:
+        for calendar_id in config.get("CALENDAR_IDS"):
             events.extend(client.get_events(calendar_id, start_time=start_time_dt, end_time=end_time_dt))
         events.sort(key=lambda e: e["start"].get("dateTime", e["start"].get("date")))
-        calendar_colors = get_calendar_colors(config["CALENDAR_IDS"])
+        calendar_colors = get_calendar_colors(config.get("CALENDAR_IDS"))
         click.echo(click.style("Upcoming Events:", fg="cyan"))
         for event in events:
+            logger.debug(f"show_events: formatting event summary={event.get('summary', 'Busy')}")
             for line in format_event(event, calendar_colors, config):
                 click.echo(line)
     except Exception as e:
-        click.echo(click.style(f"Error: {e}", fg="red"))
+        import google.auth.exceptions
+        if isinstance(e, google.auth.exceptions.GoogleAuthError) or "invalid_scope" in str(e):
+            click.echo(click.style("Google authentication failed. Please check your credentials, token, and SCOPES in config.", fg="red"))
+            click.echo(click.style("Run 'caltool config' to set up or update your configuration.", fg="yellow"))
+        else:
+            click.echo(click.style(f"Error: {e}", fg="red"))
         raise click.Abort()
 
-def prompt_for_config():
-    """Prompt the user to create a config file with default values."""
-    click.echo(click.style("Creating a new configuration file...", fg="cyan"))
-    credentials_file = click.prompt(
-        "Enter the path to your credentials file", default="~/.config/caltool/credentials.json"
-    )
-    token_file = click.prompt("Enter the path to your token file", default="~/.config/caltool/token.json")
-    time_zone = click.prompt("Enter your time zone", default="America/Los_Angeles")
-    availability_start = click.prompt("Enter your availability start time (HH:MM)", default="08:00")
-    availability_end = click.prompt("Enter your availability end time (HH:MM)", default="18:00")
-    calendar_ids = click.prompt(
-        "Enter the comma-separated calendar IDs"
-        "\n(You can update this later. The get-calendars command"
-        " will show your current calendars.)",
-        default="primary",
-    ).split(",")
-    config = {
-        "CREDENTIALS_FILE": credentials_file,
-        "TOKEN_FILE": token_file,
-        "TIME_ZONE": time_zone,
-        "AVAILABILITY_START": availability_start,
-        "AVAILABILITY_END": availability_end,
-        "CALENDAR_IDS": calendar_ids,
-    }
-    with open(DEFAULT_CONFIG_FILE, "w") as config_file:
-        json.dump(config, config_file, indent=4)
-    click.echo(click.style(f"Configuration file created at {DEFAULT_CONFIG_FILE}", fg="green"))
-
-if __name__ == "__main__":
-    cli()
