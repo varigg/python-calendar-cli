@@ -8,7 +8,7 @@ from click.testing import CliRunner
 
 from caltool.cli import cli
 from caltool.gcal_client import GCalClient
-from caltool.scheduler import Scheduler
+from caltool.scheduler import Scheduler, SearchParameters
 from src.caltool.config import Config
 
 
@@ -104,14 +104,17 @@ def scheduler():
     time_zone = "America/Los_Angeles"
     start_date = datetime.date(2025, 5, 2)
     end_date = datetime.date(2025, 5, 3)
-    return Scheduler(
-        client=Mock(),
+    search_params = SearchParameters(
         start_date=str(start_date),
         end_date=str(end_date),
         start_time=availability_start.strftime("%H:%M"),
         end_time=availability_end.strftime("%H:%M"),
         duration=duration_minutes,
         timezone=time_zone,
+    )
+    return Scheduler(
+        client=Mock(),
+        search_params=search_params,
         calendar_ids=["primary"],
     )
 
@@ -174,10 +177,7 @@ def test_free_command(mock_gcal, busy_times):
         cli,
         [
             "free",
-            "--start-date",
-            "2025-05-02",
-            "--end-date",
-            "2025-05-03",
+            "today+1",
             "--duration",
             "30",
             "--availability-start",
@@ -191,7 +191,8 @@ def test_free_command(mock_gcal, busy_times):
     )
     assert result.exit_code == 0
     output = clean_cli_output(result.output)
-    assert "Fri 05/02" in output
+    assert "Wed 08/20" in output
+    assert "Thu 08/21" in output
     assert "PM" in output
     assert re.search(r"\d{2}:\d{2} [AP]M - \d{2}:\d{2} [AP]M", output)
 
@@ -223,7 +224,18 @@ def test_get_calendars_command(mock_gcal, calendar_data):
 def test_gcalclient_injection():
     # Test that dependency injection works for GCalClient
     mock_service = Mock()
-    client = GCalClient("/fake/creds.json", "/fake/token.json", ["scope"], service=mock_service)
+    config_data = {
+        "CREDENTIALS_FILE": "/fake/creds.json",
+        "TOKEN_FILE": "/fake/token.json",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
+    client = GCalClient(mock_config, service=mock_service)
     assert client.service is mock_service
     # Test that API methods use the injected service
     client.service.calendarList().list().execute.return_value = {"items": ["foo"]}

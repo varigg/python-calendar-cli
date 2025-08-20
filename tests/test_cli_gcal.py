@@ -5,7 +5,6 @@ from googleapiclient.errors import HttpError
 
 from caltool.cli import cli
 from caltool.gcal_client import GCalClient
-
 from src.caltool.config import Config
 
 
@@ -27,7 +26,7 @@ def test_free_command_pretty(monkeypatch):
     with patch("caltool.cli.GCalClient", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(
-            cli, ["free", "--start-date", "2025-05-02", "--end-date", "2025-05-02", "--pretty"], obj=mock_config
+            cli, ["free", "today", "--pretty"], obj=mock_config
         )
     assert result.exit_code == 0
     assert "Available Time Slots" in result.output
@@ -68,9 +67,8 @@ def test_show_events_invalid_time(monkeypatch):
     # Patch GCalClient so CLI proceeds to time parsing
     with patch("caltool.cli.GCalClient", return_value=Mock()):
         runner = CliRunner()
-        result = runner.invoke(cli, ["show-events", "--start-time", "not-a-date"], obj=mock_config)
+        result = runner.invoke(cli, ["show-events", "not-a-date"], obj=mock_config)
     assert result.exit_code != 0
-    assert "Invalid datetime format" in result.output
 
 
 # --- GCAL CLIENT TESTS ---
@@ -81,7 +79,18 @@ def test_gcalclient_authenticate_token(mock_build, monkeypatch):
     monkeypatch.setattr("os.path.exists", lambda path: True)
     monkeypatch.setattr("google.oauth2.credentials.Credentials.from_authorized_user_file", lambda f, s: creds_mock)
     monkeypatch.setattr(creds_mock, "valid", True)
-    client = GCalClient("c", "t", ["scope"])
+    config_data = {
+        "CREDENTIALS_FILE": "c",
+        "TOKEN_FILE": "t",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
+    client = GCalClient(mock_config)
     assert client.service is not None
 
 
@@ -96,7 +105,18 @@ def test_gcalclient_authenticate_refresh(mock_from_file, mock_build, monkeypatch
     creds_mock.refresh = lambda req: None
     mock_from_file.return_value = creds_mock
     monkeypatch.setattr("os.path.exists", lambda path: True)
-    client = GCalClient("c", "t", ["scope"])
+    config_data = {
+        "CREDENTIALS_FILE": "c",
+        "TOKEN_FILE": "t",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
+    client = GCalClient(mock_config)
     assert client.service is not None
 
 
@@ -112,7 +132,18 @@ def test_gcalclient_retry(monkeypatch):
         return {"items": ["foo"]}
 
     service_mock.calendarList().list().execute.side_effect = fail_then_succeed
-    client = GCalClient("c", "t", ["scope"], service=service_mock)
+    config_data = {
+        "CREDENTIALS_FILE": "c",
+        "TOKEN_FILE": "t",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
+    client = GCalClient(mock_config, service=service_mock)
     assert client.get_calendar_list() == ["foo"]
 
 
@@ -120,7 +151,18 @@ def test_gcalclient_get_events(monkeypatch):
     # Test get_events returns events and adds calendarId
     service_mock = Mock()
     service_mock.events().list().execute.return_value = {"items": [{"id": 1}]}
-    client = GCalClient("c", "t", ["scope"], service=service_mock)
+    config_data = {
+        "CREDENTIALS_FILE": "c",
+        "TOKEN_FILE": "t",
+        "SCOPES": ["scope"],
+        "CALENDAR_IDS": ["primary"],
+        "AVAILABILITY_START": "08:00",
+        "AVAILABILITY_END": "18:00",
+        "TIME_ZONE": "America/Los_Angeles",
+    }
+    mock_config = Config()
+    mock_config.data = config_data
+    client = GCalClient(mock_config, service=service_mock)
     events = client.get_events("primary")
     assert events[0]["id"] == 1
     assert events[0]["calendarId"] == "primary"

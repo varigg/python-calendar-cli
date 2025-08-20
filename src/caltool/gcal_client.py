@@ -36,14 +36,15 @@ class GCalClient:
     A class to interact with Google Calendar API.
     """
 
-    def __init__(self, credentials_file: str, token_file: str, scopes: list, service: object | None = None):
+    def __init__(self, config, service: object | None = None):
         """
-        Initialize the GCalClient with the provided credentials and token files.
+        Initialize the GCalClient with a Config object.
         Optionally, inject a mock service for testing.
         """
-        self.credentials_file = os.path.expanduser(credentials_file)
-        self.token_file = os.path.expanduser(token_file)
-        self.scopes = scopes
+        self.config = config
+        self.credentials_file = os.path.expanduser(config.get("CREDENTIALS_FILE"))
+        self.token_file = os.path.expanduser(config.get("TOKEN_FILE"))
+        self.scopes = config.get("SCOPES")
         logger.debug(f"GCalClient init: credentials_file={self.credentials_file}, token_file={self.token_file}, scopes={self.scopes}")
         self.service = service or self.authenticate()
 

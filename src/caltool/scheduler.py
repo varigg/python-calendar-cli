@@ -1,10 +1,19 @@
 import datetime
 import logging
+from dataclasses import dataclass
 from typing import Any
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class SearchParameters:
+    start_date: str
+    end_date: str
+    start_time: str
+    end_time: str
+    duration: int
+    timezone: str
 
 class Scheduler:
     """
@@ -14,12 +23,7 @@ class Scheduler:
     def __init__(
         self,
         client: Any,
-        start_date: str,
-        end_date: str,
-        start_time: str,
-        end_time: str,
-        duration: int,
-        timezone: str,
+        search_params: SearchParameters,
         calendar_ids: list[str],
     ):
         """
@@ -27,22 +31,21 @@ class Scheduler:
         Raises ValueError for invalid arguments.
         """
         try:
-            self.start_date = datetime.date.fromisoformat(start_date)
-            self.end_date = datetime.date.fromisoformat(end_date)
-            self.start_time = datetime.time.fromisoformat(start_time)
-            self.end_time = datetime.time.fromisoformat(end_time)
+            self.start_date = datetime.date.fromisoformat(search_params.start_date)
+            self.end_date = datetime.date.fromisoformat(search_params.end_date)
+            self.start_time = datetime.time.fromisoformat(search_params.start_time)
+            self.end_time = datetime.time.fromisoformat(search_params.end_time)
         except Exception as e:
             raise ValueError(f"Invalid date or time format: {e}")
-        if not isinstance(duration, int) or duration <= 0:
+        if not isinstance(search_params.duration, int) or search_params.duration <= 0:
             raise ValueError("Duration must be a positive integer.")
         if not isinstance(calendar_ids, list) or not all(isinstance(cid, str) for cid in calendar_ids):
             raise ValueError("calendar_ids must be a list of strings.")
         self.client = client
-        self.duration = duration
-        self.timezone = timezone
+        self.duration = search_params.duration
+        self.timezone = search_params.timezone
         self.calendar_ids = calendar_ids
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"Scheduler initialized with config: {self.__dict__}")
 
     def is_slot_long_enough(self, start: datetime.datetime, end: datetime.datetime, duration_minutes: int) -> bool:
