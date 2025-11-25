@@ -118,13 +118,13 @@ def get_calendars(config):
 @click.argument("date_range", required=False)
 @click.pass_obj
 def show_events(config, date_range):
+    """Show upcoming events from all calendars in a readable format."""
     tz = config.get("TIME_ZONE")
     if not date_range:
         date_range = "today"
     start_date, end_date = parse_date_range(date_range, tz)
     start_time_dt = parse_datetime_option(start_date + "T00:00:00")
     end_time_dt = parse_datetime_option(end_date + "T23:59:59")
-    """Show upcoming events from all calendars in a readable format."""
     try:
         client = GCalClient(config)
         events = []

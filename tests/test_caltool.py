@@ -156,7 +156,11 @@ def test_get_free_slots_for_day(scheduler, busy, expected_count):
 
 
 @patch("caltool.cli.GCalClient")
-def test_free_command(mock_gcal, busy_times):
+@patch("caltool.cli.parse_date_range")
+def test_free_command(mock_parse_date_range, mock_gcal, busy_times):
+    # Mock parse_date_range to return fixed dates
+    mock_parse_date_range.return_value = ("2025-05-02", "2025-05-03")
+    
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = busy_times
     mock_gcal.return_value = mock_client
@@ -191,8 +195,9 @@ def test_free_command(mock_gcal, busy_times):
     )
     assert result.exit_code == 0
     output = clean_cli_output(result.output)
-    assert "Wed 08/20" in output
-    assert "Thu 08/21" in output
+    # Check for the fixed dates (May 2 is Friday, May 3 is Saturday in 2025)
+    assert "Fri 05/02" in output
+    assert "Sat 05/03" in output
     assert "PM" in output
     assert re.search(r"\d{2}:\d{2} [AP]M - \d{2}:\d{2} [AP]M", output)
 

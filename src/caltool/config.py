@@ -71,8 +71,6 @@ class Config:
             json.dump(self.data, f, indent=4)
 
     def prompt(self):
-        import click
-
         click.echo(click.style("Creating a new configuration file...", fg="cyan"))
         self.data["CREDENTIALS_FILE"] = click.prompt(
             "Enter the path to your credentials file",

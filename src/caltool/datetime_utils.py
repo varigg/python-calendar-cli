@@ -73,7 +73,6 @@ def format_event_time(event: dict, timezone: str) -> str:
             end_dt = datetime.datetime.fromisoformat(end.replace("Z", "+00:00"))
         # Convert to local timezone if possible
         try:
-            import zoneinfo
             tz = zoneinfo.ZoneInfo(timezone)
             start_dt = start_dt.astimezone(tz)
             end_dt = end_dt.astimezone(tz)
