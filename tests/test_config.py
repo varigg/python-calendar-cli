@@ -2,7 +2,9 @@ import json
 import os
 import tempfile
 
-from src.caltool.config import DEFAULTS, Config
+from unittest.mock import patch
+
+from caltool.config import DEFAULTS, Config
 
 
 class TestConfig:
@@ -56,3 +58,14 @@ class TestConfig:
             with open(path) as f:
                 loaded = json.load(f)
             assert loaded["TIME_ZONE"] == "Europe/Paris"
+
+    def test_config_prompt_asks_for_scopes(self):
+        """Test that Config.prompt asks for scopes."""
+        prompts = []
+        def fake_prompt(text, default=None):
+            prompts.append(text)
+            return default or ""
+        config = Config()
+        with patch("click.prompt", side_effect=fake_prompt):
+            config.prompt()
+        assert any("scope" in p.lower() for p in prompts), "Config.prompt should ask for scopes"

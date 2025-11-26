@@ -67,7 +67,7 @@ def free(config, date_range, duration, availability_start, availability_end, tim
             start_time=availability_start if availability_start else config.get("AVAILABILITY_START"),
             end_time=availability_end if availability_end else config.get("AVAILABILITY_END"),
             duration=duration,
-            timezone=timezone if timezone else config.get("TIME_ZONE"),
+            timezone=tz,
         )
         scheduler = Scheduler(
             client=client,
