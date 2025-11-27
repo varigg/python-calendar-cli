@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SearchParameters:
-    start_date: str
-    end_date: str
-    start_time: str
-    end_time: str
+    start_date: datetime.date
+    end_date: datetime.date
+    start_time: datetime.time
+    end_time: datetime.time
     duration: int
     timezone: str
 
@@ -30,13 +30,11 @@ class Scheduler:
         Initialize the Scheduler with configuration.
         Raises ValueError for invalid arguments.
         """
-        try:
-            self.start_date = datetime.date.fromisoformat(search_params.start_date)
-            self.end_date = datetime.date.fromisoformat(search_params.end_date)
-            self.start_time = datetime.time.fromisoformat(search_params.start_time)
-            self.end_time = datetime.time.fromisoformat(search_params.end_time)
-        except Exception as e:
-            raise ValueError(f"Invalid date or time format: {e}")
+        self.start_date = search_params.start_date
+        self.end_date = search_params.end_date
+        self.start_time = search_params.start_time
+        self.end_time = search_params.end_time
+
         if not isinstance(search_params.duration, int) or search_params.duration <= 0:
             raise ValueError("Duration must be a positive integer.")
         if not isinstance(calendar_ids, list) or not all(isinstance(cid, str) for cid in calendar_ids):

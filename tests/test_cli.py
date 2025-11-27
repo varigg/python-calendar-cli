@@ -117,8 +117,13 @@ def test_get_calendars_command(mock_config, calendar_data):
 @patch("caltool.cli.parse_date_range")
 def test_free_command(mock_parse_date_range, mock_gcal, mock_config, busy_times):
     """Test free command with date range and busy times."""
-    # Mock parse_date_range to return fixed dates
-    mock_parse_date_range.return_value = ("2025-05-02", "2025-05-03")
+    # Mock parse_date_range to return fixed datetime objects
+    import datetime
+    from zoneinfo import ZoneInfo
+    tz = ZoneInfo("America/Los_Angeles")
+    start_dt = datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz)
+    end_dt = datetime.datetime(2025, 5, 3, 23, 59, 59, tzinfo=tz)
+    mock_parse_date_range.return_value = (start_dt, end_dt)
     
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = busy_times

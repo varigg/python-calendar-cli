@@ -53,10 +53,10 @@ def scheduler():
     start_date = datetime.date(2025, 5, 2)
     end_date = datetime.date(2025, 5, 3)
     search_params = SearchParameters(
-        start_date=str(start_date),
-        end_date=str(end_date),
-        start_time=availability_start.strftime("%H:%M"),
-        end_time=availability_end.strftime("%H:%M"),
+        start_date=start_date,
+        end_date=end_date,
+        start_time=availability_start,
+        end_time=availability_end,
         duration=duration_minutes,
         timezone=time_zone,
     )

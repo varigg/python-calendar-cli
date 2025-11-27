@@ -9,6 +9,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from .datetime_utils import to_zulutime
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,8 +94,8 @@ class GCalClient:
         """Get busy times for a specific day within availability hours."""
         logger.debug(f"Fetching busy times between {day_start} and {day_end}")
         body = {
-            "timeMin": day_start.astimezone(datetime.UTC).isoformat().replace("+00:00", "Z"),
-            "timeMax": day_end.astimezone(datetime.UTC).isoformat().replace("+00:00", "Z"),
+            "timeMin": to_zulutime(day_start),
+            "timeMax": to_zulutime(day_end),
             "timeZone": timezone,
             "items": [{"id": cal_id} for cal_id in calendar_ids],
         }
@@ -141,9 +143,9 @@ class GCalClient:
             "orderBy": "startTime",
         }
         if start_time:
-            params["timeMin"] = start_time.astimezone(datetime.UTC).isoformat().replace("+00:00", "Z")
+            params["timeMin"] = to_zulutime(start_time)
         if end_time:
-            params["timeMax"] = end_time.astimezone(datetime.UTC).isoformat().replace("+00:00", "Z")
+            params["timeMax"] = to_zulutime(end_time)
         try:
             events_result = self.service.events().list(**params).execute()
             events = events_result.get("items", [])

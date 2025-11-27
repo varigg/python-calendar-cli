@@ -1,14 +1,12 @@
 import logging
-from collections import defaultdict
 
 import click
 from colorama import Fore, Style
-from tabulate import tabulate
 
 from .config import Config
-from .datetime_utils import parse_date_range, parse_datetime_option
+from .datetime_utils import parse_date_range, parse_time_option
 from .errors import handle_cli_exception
-from .format import get_calendar_colors, pretty_print_slots
+from .format import format_calendars_table, get_calendar_colors, pretty_print_slots, print_events_grouped_by_date
 from .gcal_client import GCalClient
 from .scheduler import Scheduler, SearchParameters
 
@@ -58,14 +56,19 @@ def free(config, date_range, duration, availability_start, availability_end, tim
     tz = timezone if timezone else config.get("TIME_ZONE")
     if not date_range:
         date_range = "today"
-    start_date, end_date = parse_date_range(date_range, tz)
+    start_datetime, end_datetime = parse_date_range(date_range, tz)
+    
+    # Parse availability times
+    avail_start_str = availability_start if availability_start else config.get("AVAILABILITY_START")
+    avail_end_str = availability_end if availability_end else config.get("AVAILABILITY_END")
+
     try:
         client = GCalClient(config)
         search_params = SearchParameters(
-            start_date=start_date,
-            end_date=end_date,
-            start_time=availability_start if availability_start else config.get("AVAILABILITY_START"),
-            end_time=availability_end if availability_end else config.get("AVAILABILITY_END"),
+            start_date=start_datetime.date(),
+            end_date=end_datetime.date(),
+            start_time=parse_time_option(avail_start_str),
+            end_time=parse_time_option(avail_end_str),
             duration=duration,
             timezone=tz,
         )
@@ -92,25 +95,7 @@ def get_calendars(config):
         client = GCalClient(config)
         calendars = client.get_calendar_list()
         print(Fore.CYAN + "Available Calendars:" + Style.RESET_ALL)
-        table_data = [
-            [
-                Fore.GREEN + calendar["summary"] + Style.RESET_ALL,
-                Fore.BLUE + calendar["id"] + Style.RESET_ALL,
-                Fore.YELLOW + calendar.get("accessRole", "unknown") + Style.RESET_ALL,
-            ]
-            for calendar in calendars
-        ]
-        print(
-            tabulate(
-                table_data,
-                headers=[
-                    Fore.CYAN + "Calendar Name" + Style.RESET_ALL,
-                    Fore.CYAN + "Calendar ID" + Style.RESET_ALL,
-                    Fore.CYAN + "Access Role" + Style.RESET_ALL,
-                ],
-                tablefmt="grid",
-            )
-        )
+        print(format_calendars_table(calendars))
     except Exception as e:
         handle_cli_exception(e)
 
@@ -122,53 +107,24 @@ def show_events(config, date_range):
     tz = config.get("TIME_ZONE")
     if not date_range:
         date_range = "today"
-    start_date, end_date = parse_date_range(date_range, tz)
-    start_time_dt = parse_datetime_option(start_date + "T00:00:00")
-    end_time_dt = parse_datetime_option(end_date + "T23:59:59")
+    start_datetime, end_datetime = parse_date_range(date_range, tz)
+    
     try:
         client = GCalClient(config)
-        events = []
         calendar_ids = config.get("CALENDAR_IDS")
+        
         # Build calendar_id -> summary mapping
         calendar_list = client.get_calendar_list()
         calendar_names = {cal["id"]: cal["summary"] for cal in calendar_list}
-        for calendar_id in calendar_ids:
-            events.extend(client.get_events(calendar_id, start_time=start_time_dt, end_time=end_time_dt))
-        events.sort(key=lambda e: e["start"].get("dateTime", e["start"].get("date")))
-        calendar_colors = get_calendar_colors(calendar_ids)
-        # Group events by date
         
-        grouped = defaultdict(list)
-        for event in events:
-            dt_str = event["start"].get("dateTime") or event["start"].get("date")
-            date_only = dt_str.split("T")[0]
-            grouped[date_only].append(event)
-        for date, day_events in grouped.items():
-            click.echo(click.style(f"Events for {date}", fg="cyan"))
-            for event in day_events:
-                logger.debug(f"show_events: formatting event summary={event.get('summary', 'Busy')}")
-                # Show start and end time for each event
-                start_str = event["start"].get("dateTime") or event["start"].get("date")
-                end_str = event["end"].get("dateTime") or event["end"].get("date")
-                if "T" in start_str:
-                    start_time = start_str.split("T")[1][:5]
-                else:
-                    start_time = "All day"
-                if "T" in end_str:
-                    end_time = end_str.split("T")[1][:5]
-                else:
-                    end_time = "All day"
-                summary = event.get("summary", "Busy")
-                calendar_id = event.get("calendarId", "Unknown")
-                calendar_color = calendar_colors.get(calendar_id, "white")
-                calendar_name = calendar_names.get(calendar_id, "Unknown")
-                bullet = click.style("• ", fg=calendar_color, bold=True)
-                event_line = f"{bullet}{summary} ({calendar_name})"
-                time_line = f"    {start_time} - {end_time}"
-                click.echo(event_line)
-                click.echo(time_line)
-                if event.get("location"):
-                    location_line = f"    {click.style(event['location'], fg='blue')}"
-                    click.echo(location_line)
+        # Fetch and sort events
+        events = []
+        for calendar_id in calendar_ids:
+            events.extend(client.get_events(calendar_id, start_time=start_datetime, end_time=end_datetime))
+        events.sort(key=lambda e: e["start"].get("dateTime", e["start"].get("date")))
+        
+        # Display events grouped by date
+        calendar_colors = get_calendar_colors(calendar_ids)
+        print_events_grouped_by_date(events, calendar_colors, calendar_names, tz)
     except Exception as e:
         handle_cli_exception(e)
