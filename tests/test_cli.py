@@ -9,7 +9,6 @@ from click.testing import CliRunner
 from googleapiclient.errors import HttpError
 
 from caltool.cli import cli
-from caltool.config import Config
 from caltool.gcal_client import GCalClient
 
 

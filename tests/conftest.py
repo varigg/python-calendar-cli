@@ -1,7 +1,6 @@
 """Shared test fixtures for the calendarcli test suite."""
 import datetime
 from unittest.mock import Mock
-from zoneinfo import ZoneInfo
 
 import pytest
 
