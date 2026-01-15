@@ -5,6 +5,11 @@ import click
 import google.auth.exceptions
 
 
+class CLIError(Exception):
+    """Custom exception for CLI-related errors."""
+    pass
+
+
 def cli_error(message: str, suggestion: str = "", abort: bool = True):
     """Consistent CLI error reporting."""
     click.echo(click.style(message, fg="red"))
