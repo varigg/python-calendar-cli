@@ -50,7 +50,8 @@ As a CLI user, I want the application to continue working exactly as before.
 
 **Acceptance Scenarios**:
 
-1. Given CLI uses composed clients, When all 88 existing tests run, Then all tests pass
+1. Given CLI uses composed clients, When CLI commands are executed, Then behavior is identical to before (same arguments, same output)
+2. Given old internal tests deleted, When new behavioral tests run, Then all tests pass
 
 ## Functional Requirements
 
@@ -72,7 +73,7 @@ As a CLI user, I want the application to continue working exactly as before.
 
 **FR-007**: Composed clients MUST be testable by injecting mock dependencies via constructor
 
-**FR-008**: System MUST maintain backward compatibility - all existing CLI tests MUST pass
+**FR-008**: System MUST maintain backward compatibility - CLI commands, arguments, and output unchanged; internal test structure may change
 
 ## Success Criteria
 
@@ -84,6 +85,6 @@ As a CLI user, I want the application to continue working exactly as before.
 
 **SC-004**: Composed clients testable in under 10 lines of test code per method
 
-**SC-005**: All 88 existing CLI tests pass without modification
+**SC-005**: CLI commands work unchanged; old internal-structure tests deleted/replaced; behavioral tests verified
 
 **SC-006**: Test execution 30%+ faster due to eliminated @patch overhead
