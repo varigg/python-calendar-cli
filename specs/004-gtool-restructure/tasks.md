@@ -15,16 +15,16 @@
 
 **Purpose**: Create new directory structure and package scaffolding
 
-- [ ] T001 Create `src/gtool/` directory structure with all layer packages
-- [ ] T002 [P] Create `src/gtool/__init__.py` with package exports
-- [ ] T003 [P] Create `src/gtool/infrastructure/__init__.py`
-- [ ] T004 [P] Create `src/gtool/config/__init__.py`
-- [ ] T005 [P] Create `src/gtool/utils/__init__.py`
-- [ ] T006 [P] Create `src/gtool/clients/__init__.py`
-- [ ] T007 [P] Create `src/gtool/core/__init__.py`
-- [ ] T008 [P] Create `src/gtool/cli/__init__.py`
+- [x] T001 Create `src/gtool/` directory structure with all layer packages
+- [x] T002 [P] Create `src/gtool/__init__.py` with package exports
+- [x] T003 [P] Create `src/gtool/infrastructure/__init__.py`
+- [x] T004 [P] Create `src/gtool/config/__init__.py`
+- [x] T005 [P] Create `src/gtool/utils/__init__.py`
+- [x] T006 [P] Create `src/gtool/clients/__init__.py`
+- [x] T007 [P] Create `src/gtool/core/__init__.py`
+- [x] T008 [P] Create `src/gtool/cli/__init__.py`
 
-**Checkpoint**: Empty package structure ready for file migration
+**Checkpoint**: ✅ Empty package structure ready for file migration
 
 ---
 
@@ -32,12 +32,12 @@
 
 **Purpose**: Migrate configuration and utility modules (required before Infrastructure)
 
-- [ ] T009 [P] [US2] Copy `config.py` → `gtool/config/settings.py`, update imports
-- [ ] T010 [P] [US2] Copy `datetime_utils.py` → `gtool/utils/datetime.py`, update imports
-- [ ] T011 [US2] Update `gtool/config/__init__.py` with public exports
-- [ ] T012 [US2] Update `gtool/utils/__init__.py` with public exports
+- [x] T009 [P] [US2] Copy `config.py` → `gtool/config/settings.py`, update imports
+- [x] T010 [P] [US2] Copy `datetime_utils.py` → `gtool/utils/datetime.py`, update imports
+- [x] T011 [US2] Update `gtool/config/__init__.py` with public exports
+- [x] T012 [US2] Update `gtool/utils/__init__.py` with public exports
 
-**Checkpoint**: Config and utils layers complete (required for Infrastructure phase)
+**Checkpoint**: ✅ Config and utils layers complete (required for Infrastructure phase)
 
 ---
 
@@ -158,15 +158,15 @@ Phase 1 (Setup) → Phase 2 (Config/Utils) → Phase 3 (Infrastructure) → Phas
 
 ### Parallelizable Tasks
 
-| Phase | Parallel Tasks |
-|-------|----------------|
-| 1 | T002-T008 (all __init__.py files) |
-| 2 | T009-T010 (config and datetime utils) |
-| 3 | T013-T015 (error categorizer, retry, service factory) |
-| 4 | T018-T019 (both clients) |
-| 5 | T021 can start immediately |
-| 6 | T024-T025 (errors and formatters) |
-| 8 | T031-T044 (all test updates) |
+| Phase | Parallel Tasks                                        |
+| ----- | ----------------------------------------------------- |
+| 1     | T002-T008 (all **init**.py files)                     |
+| 2     | T009-T010 (config and datetime utils)                 |
+| 3     | T013-T015 (error categorizer, retry, service factory) |
+| 4     | T018-T019 (both clients)                              |
+| 5     | T021 can start immediately                            |
+| 6     | T024-T025 (errors and formatters)                     |
+| 8     | T031-T044 (all test updates)                          |
 
 ---
 
