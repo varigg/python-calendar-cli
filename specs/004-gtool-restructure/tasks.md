@@ -45,13 +45,13 @@
 
 **Purpose**: Migrate infrastructure components (depends on Config being available)
 
-- [ ] T013 [P] [US2] Copy `error_categorizer.py` → `gtool/infrastructure/error_categorizer.py`, update imports
-- [ ] T014 [P] [US2] Copy `retry_policy.py` → `gtool/infrastructure/retry.py`, update imports
-- [ ] T015 [P] [US2] Copy `service_factory.py` → `gtool/infrastructure/service_factory.py`, update imports
-- [ ] T016 [US2] Copy `google_auth.py` → `gtool/infrastructure/auth.py`, update imports (now Config is available)
-- [ ] T017 [US2] Update `gtool/infrastructure/__init__.py` with public exports
+- [x] T013 [P] [US2] Copy `error_categorizer.py` → `gtool/infrastructure/error_categorizer.py`, update imports
+- [x] T014 [P] [US2] Copy `retry_policy.py` → `gtool/infrastructure/retry.py`, update imports
+- [x] T015 [P] [US2] Copy `service_factory.py` → `gtool/infrastructure/service_factory.py`, update imports
+- [x] T016 [US2] Copy `google_auth.py` → `gtool/infrastructure/auth.py`, update imports (now Config is available)
+- [x] T017 [US2] Update `gtool/infrastructure/__init__.py` with public exports
 
-**Checkpoint**: Infrastructure layer complete, can be imported as `gtool.infrastructure`
+**Checkpoint**: ✅ Infrastructure layer complete, can be imported as `gtool.infrastructure`
 
 ---
 
