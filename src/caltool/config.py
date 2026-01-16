@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -20,6 +19,18 @@ DEFAULTS = {
     "AVAILABILITY_END": "18:00",
     "CALENDAR_IDS": ["primary"],
     "SCOPES": ["https://www.googleapis.com/auth/calendar"],
+    "GMAIL_ENABLED": False,
+    # OAuth local-server settings (used by GoogleAuth).
+    # You can override these via env vars:
+    # - CALTOOL_OAUTH_HOST (default: localhost)
+    # - CALTOOL_OAUTH_PORTS (comma-separated allowlist; default: 8400..8410)
+}
+
+# Available scopes for configuration
+AVAILABLE_SCOPES = {
+    "calendar": "https://www.googleapis.com/auth/calendar",
+    "gmail.readonly": "https://www.googleapis.com/auth/gmail.readonly",
+    "gmail.modify": "https://www.googleapis.com/auth/gmail.modify",
 }
 
 
@@ -97,13 +108,58 @@ class Config:
             default=",".join(self.data.get("CALENDAR_IDS", DEFAULTS["CALENDAR_IDS"])),
         )
         self.data["CALENDAR_IDS"] = [cid.strip() for cid in cal_ids.split(",")]
-        scopes_input = click.prompt(
-            "Enter the comma-separated Google API scopes",
-            default=",".join(self.data.get("SCOPES", DEFAULTS["SCOPES"])),
-        )
-        self.data["SCOPES"] = [s.strip() for s in scopes_input.split(",") if s.strip()]
+
+        # Scope selection with menu
+        self._prompt_for_scopes()
+
         self.save()
         click.echo(click.style(f"Configuration file created at {self.path}", fg="green"))
+
+    def _prompt_for_scopes(self):
+        """Interactively prompt user to select scopes with menu-based interface."""
+        click.echo(click.style("\nSelect which features to enable:", fg="cyan"))
+
+        # Determine which scopes are already selected
+        current_scopes = set(self.data.get("SCOPES", DEFAULTS["SCOPES"]))
+
+        # Calendar scope (always included)
+        has_calendar = AVAILABLE_SCOPES["calendar"] in current_scopes
+        if not has_calendar:
+            self.data["SCOPES"] = self.data.get("SCOPES", [])
+            if AVAILABLE_SCOPES["calendar"] not in self.data["SCOPES"]:
+                self.data["SCOPES"].append(AVAILABLE_SCOPES["calendar"])
+
+        # Gmail scope selection
+        gmail_enabled = click.confirm(
+            "Do you want to enable Gmail access? (Read-only)", default=self.data.get("GMAIL_ENABLED", False)
+        )
+        self.data["GMAIL_ENABLED"] = gmail_enabled
+
+        if gmail_enabled:
+            # Ask about write permissions
+            gmail_modify = click.confirm(
+                "Do you need write permissions (send, delete, modify)? (Read-only is recommended)", default=False
+            )
+
+            scopes = self.data.get("SCOPES", DEFAULTS["SCOPES"].copy())
+            if gmail_modify:
+                scope = AVAILABLE_SCOPES["gmail.modify"]
+            else:
+                scope = AVAILABLE_SCOPES["gmail.readonly"]
+
+            # Remove old Gmail scopes if present
+            scopes = [s for s in scopes if "gmail" not in s]
+            scopes.append(scope)
+            self.data["SCOPES"] = scopes
+            click.echo(
+                click.style(
+                    f"  ✓ Gmail enabled with {('read-only' if not gmail_modify else 'read-write')} access", fg="green"
+                )
+            )
+        else:
+            # Remove Gmail scopes if disabled
+            scopes = self.data.get("SCOPES", DEFAULTS["SCOPES"].copy())
+            self.data["SCOPES"] = [s for s in scopes if "gmail" not in s]
 
     def get(self, key, default=None):
         env_key = f"CALTOOL_{key.upper()}"
@@ -119,3 +175,45 @@ class Config:
         value = self.data.get(key, default)
         logger.debug(f"Config get: {key}={value}")
         return value
+
+    def is_gmail_enabled(self) -> bool:
+        """Check if Gmail is enabled in configuration.
+
+        Gmail is enabled if GMAIL_ENABLED is True or if Gmail scopes are present.
+
+        Returns:
+            True if Gmail is enabled
+        """
+        gmail_enabled = self.get("GMAIL_ENABLED", False)
+        has_gmail_scope = any("gmail" in scope.lower() for scope in self.get("SCOPES", []))
+        return gmail_enabled or has_gmail_scope
+
+    def has_gmail_scope(self, scope_type: str = "readonly") -> bool:
+        """Check if user has required Gmail scope.
+
+        Args:
+            scope_type: 'readonly' or 'modify'
+
+        Returns:
+            True if user has the requested Gmail scope or a higher level scope
+        """
+        scopes = self.get("SCOPES", [])
+        if scope_type == "readonly":
+            # User has readonly if they have readonly or modify
+            return any("gmail.readonly" in s or "gmail.modify" in s for s in scopes)
+        elif scope_type == "modify":
+            # User has modify only if they explicitly have modify
+            return any("gmail.modify" in s for s in scopes)
+        return False
+
+    def validate_gmail_scopes(self) -> None:
+        """Validate that Gmail scopes are configured when Gmail is enabled.
+
+        Raises:
+            click.UsageError: If Gmail is enabled but scopes are not configured
+        """
+        if self.is_gmail_enabled() and not self.has_gmail_scope("readonly"):
+            logger.error("Gmail enabled but no Gmail scope configured")
+            raise click.UsageError(
+                "Gmail is enabled but no Gmail scope is configured. Run 'caltool config' to add Gmail permissions."
+            )
