@@ -1,24 +1,25 @@
 import pytest
-from src.caltool.config import Config
+
+from gtool.config.settings import Config
 
 
 def test_env_override_scalar(monkeypatch):
-    monkeypatch.setenv("CALTOOL_TIME_ZONE", "Europe/London")
+    monkeypatch.setenv("GTOOL_TIME_ZONE", "Europe/London")
     config = Config()
     assert config.get("TIME_ZONE") == "Europe/London"
 
 
 def test_env_override_list(monkeypatch):
-    monkeypatch.setenv("CALTOOL_CALENDAR_IDS", "primary,work")
+    monkeypatch.setenv("GTOOL_CALENDAR_IDS", "primary,work")
     config = Config()
     assert config.get("CALENDAR_IDS") == ["primary", "work"]
-    monkeypatch.setenv("CALTOOL_SCOPES", "scope1,scope2")
+    monkeypatch.setenv("GTOOL_SCOPES", "scope1,scope2")
     config = Config()
     assert config.get("SCOPES") == ["scope1", "scope2"]
 
 
 def test_env_override_priority(monkeypatch):
-    monkeypatch.setenv("CALTOOL_TIME_ZONE", "Asia/Tokyo")
+    monkeypatch.setenv("GTOOL_TIME_ZONE", "Asia/Tokyo")
     config = Config()
     # Should use env var, not config file value
     assert config.get("TIME_ZONE") == "Asia/Tokyo"
@@ -26,7 +27,7 @@ def test_env_override_priority(monkeypatch):
 
 def test_config_validation_missing(monkeypatch):
     # Remove required key
-    monkeypatch.delenv("CALTOOL_TIME_ZONE", raising=False)
+    monkeypatch.delenv("GTOOL_TIME_ZONE", raising=False)
     config = Config()
     config.data.pop("TIME_ZONE", None)
     with pytest.raises(Exception) as exc:

@@ -1,4 +1,4 @@
-"""Tests for GCalClientV2 - composition-based Calendar client.
+"""Tests for CalendarClient - composition-based Calendar client.
 
 Tests calendar API operations using composition pattern.
 No @patch decorators - all dependencies injected via constructor.
@@ -6,19 +6,18 @@ No @patch decorators - all dependencies injected via constructor.
 
 from datetime import date, time
 
-
-from caltool.gcal_client_v2 import GCalClientV2
+from gtool.clients.calendar import CalendarClient
 
 
 def test_gcal_client_v2_initialization(mock_service_factory, mock_retry_policy):
-    """FR-004: GCalClientV2 should initialize with dependencies via constructor."""
-    client = GCalClientV2(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
+    """FR-004: CalendarClient should initialize with dependencies via constructor."""
+    client = CalendarClient(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
     assert client._service_factory == mock_service_factory
     assert client._retry_policy == mock_retry_policy
 
 
 def test_gcal_client_v2_get_calendar_list(mock_google_service):
-    """FR-007: GCalClientV2.get_calendar_list() should return calendars."""
+    """FR-007: CalendarClient.get_calendar_list() should return calendars."""
     mock_google_service.calendarList.return_value.list.return_value.execute.return_value = {
         "items": [
             {"id": "primary", "summary": "Primary Calendar"},
@@ -26,7 +25,7 @@ def test_gcal_client_v2_get_calendar_list(mock_google_service):
         ]
     }
 
-    client = GCalClientV2(service_factory=None, service=mock_google_service)
+    client = CalendarClient(service_factory=None, service=mock_google_service)
     calendars = client.get_calendar_list()
 
     assert len(calendars) == 2
@@ -35,7 +34,7 @@ def test_gcal_client_v2_get_calendar_list(mock_google_service):
 
 
 def test_gcal_client_v2_get_events(mock_google_service):
-    """FR-007: GCalClientV2.get_events() should return events for date range."""
+    """FR-007: CalendarClient.get_events() should return events for date range."""
     mock_google_service.events.return_value.list.return_value.execute.return_value = {
         "items": [
             {
@@ -46,7 +45,7 @@ def test_gcal_client_v2_get_events(mock_google_service):
         ]
     }
 
-    client = GCalClientV2(service_factory=None, service=mock_google_service)
+    client = CalendarClient(service_factory=None, service=mock_google_service)
     events = client.get_events("primary", (date(2024, 1, 15), date(2024, 1, 16)))
 
     assert len(events) == 1
@@ -54,7 +53,7 @@ def test_gcal_client_v2_get_events(mock_google_service):
 
 
 def test_gcal_client_v2_get_day_busy_times(mock_google_service):
-    """FR-007: GCalClientV2.get_day_busy_times() should return busy time slots."""
+    """FR-007: CalendarClient.get_day_busy_times() should return busy time slots."""
     mock_google_service.freebusy.return_value.query.return_value.execute.return_value = {
         "calendars": {
             "primary": {
@@ -68,7 +67,7 @@ def test_gcal_client_v2_get_day_busy_times(mock_google_service):
         }
     }
 
-    client = GCalClientV2(service_factory=None, service=mock_google_service)
+    client = CalendarClient(service_factory=None, service=mock_google_service)
     busy_times = client.get_day_busy_times("primary", date(2024, 1, 15))
 
     assert len(busy_times) == 1

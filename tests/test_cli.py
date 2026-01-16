@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from click.testing import CliRunner
 
-from caltool.cli import cli
+from gtool.cli.main import cli
 
 # --- Utility Functions ---
 
@@ -32,7 +32,7 @@ def test_get_calendars_command(mock_config, calendar_data):
     mock_client = Mock()
     mock_client.get_calendar_list.return_value = calendar_data
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
 
@@ -46,7 +46,7 @@ def test_get_calendars_auth_error(mock_config):
     """Test get-calendars command with authentication error."""
     import google.auth.exceptions
 
-    with patch("caltool.cli.create_calendar_client") as mock_factory:
+    with patch("gtool.cli.main.create_calendar_client") as mock_factory:
         mock_factory.side_effect = google.auth.exceptions.GoogleAuthError("invalid_scope")
         runner = CliRunner()
         result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
@@ -60,7 +60,7 @@ def test_get_calendars_api_error(mock_config):
     mock_client = Mock()
     mock_client.get_calendar_list.side_effect = Exception("API error")
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
 
@@ -80,8 +80,8 @@ def test_free_command(mock_config, busy_times):
     mock_client.get_day_busy_times.return_value = busy_times
 
     with (
-        patch("caltool.cli.create_calendar_client", return_value=mock_client),
-        patch("caltool.cli.parse_date_range", return_value=(start_dt, end_dt)),
+        patch("gtool.cli.main.create_calendar_client", return_value=mock_client),
+        patch("gtool.cli.main.parse_date_range", return_value=(start_dt, end_dt)),
     ):
         runner = CliRunner()
         result = runner.invoke(
@@ -114,7 +114,7 @@ def test_free_command_pretty(mock_config):
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = []
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["free", "today", "--pretty"], obj=mock_config)
 
@@ -127,7 +127,7 @@ def test_free_command_no_args_defaults_to_today(mock_config):
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = []
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["free"], obj=mock_config)
 
@@ -139,7 +139,7 @@ def test_free_command_with_duration(mock_config):
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = []
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["free", "today", "--duration", "60"], obj=mock_config)
 
@@ -165,7 +165,7 @@ def test_show_events_command(mock_config):
         }
     ]
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["show-events", "today"], obj=mock_config)
 
@@ -175,7 +175,7 @@ def test_show_events_command(mock_config):
 
 def test_show_events_invalid_date(mock_config):
     """Test show-events command with invalid date format."""
-    with patch("caltool.cli.create_calendar_client", return_value=Mock()):
+    with patch("gtool.cli.main.create_calendar_client", return_value=Mock()):
         runner = CliRunner()
         result = runner.invoke(cli, ["show-events", "not-a-date"], obj=mock_config)
 
@@ -188,7 +188,7 @@ def test_show_events_no_args_defaults_to_today(mock_config):
     mock_client.get_calendar_list.return_value = [{"id": "primary", "summary": "My Calendar"}]
     mock_client.get_events.return_value = []
 
-    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+    with patch("gtool.cli.main.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["show-events"], obj=mock_config)
 
@@ -210,7 +210,7 @@ def test_gmail_list_command(mock_config):
     ]
 
     with (
-        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
         patch.object(mock_config, "validate_gmail_scopes"),
     ):
         runner = CliRunner()
@@ -229,7 +229,7 @@ def test_gmail_list_no_messages(mock_config):
     mock_client.list_messages.return_value = []
 
     with (
-        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
         patch.object(mock_config, "validate_gmail_scopes"),
     ):
         runner = CliRunner()
@@ -252,7 +252,7 @@ def test_gmail_show_message_command(mock_config):
     }
 
     with (
-        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
         patch.object(mock_config, "validate_gmail_scopes"),
     ):
         runner = CliRunner()
@@ -271,7 +271,7 @@ def test_gmail_delete_command_with_confirm(mock_config):
     mock_client.delete_message.return_value = None
 
     with (
-        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
         patch.object(mock_config, "validate_gmail_scopes"),
     ):
         runner = CliRunner()
@@ -288,7 +288,7 @@ def test_gmail_delete_command_cancelled(mock_config):
     mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.modify")
 
     with (
-        patch("caltool.cli.create_gmail_client", return_value=Mock()),
+        patch("gtool.cli.main.create_gmail_client", return_value=Mock()),
         patch.object(mock_config, "validate_gmail_scopes"),
     ):
         runner = CliRunner()

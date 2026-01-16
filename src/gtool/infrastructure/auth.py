@@ -22,8 +22,8 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from gtool.config.settings import Config
 from gtool.cli.errors import CLIError
+from gtool.config.settings import Config
 
 logger = logging.getLogger(__name__)
 

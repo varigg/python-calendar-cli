@@ -8,8 +8,8 @@ import time
 
 import pytest
 
-from caltool.error_categorizer import ErrorCategorizer
-from caltool.retry_policy import RetryPolicy
+from gtool.infrastructure.error_categorizer import ErrorCategorizer
+from gtool.infrastructure.retry import RetryPolicy
 
 
 @pytest.mark.parametrize(

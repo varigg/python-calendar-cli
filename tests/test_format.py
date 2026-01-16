@@ -2,7 +2,7 @@
 Unit tests for format.py (pretty_print_slots, get_calendar_colors, format_event).
 """
 
-import caltool.format as format
+import gtool.cli.formatters as format
 
 
 def test_get_calendar_colors_assigns_colors():

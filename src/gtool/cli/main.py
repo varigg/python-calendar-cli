@@ -5,9 +5,6 @@ import click
 import google.auth.exceptions as google_auth_exceptions
 from colorama import Fore, Style
 
-from gtool.config.settings import Config
-from gtool.utils.datetime import parse_date_range, parse_time_option
-from gtool.infrastructure.error_categorizer import ErrorCategorizer
 from gtool.cli.errors import CLIError, handle_cli_exception
 from gtool.cli.formatters import (
     format_calendars_table,
@@ -17,11 +14,14 @@ from gtool.cli.formatters import (
 )
 from gtool.clients.calendar import CalendarClient
 from gtool.clients.gmail import GmailClient
-from gtool.infrastructure.auth import GoogleAuth
-from gtool.infrastructure.retry import RetryPolicy
-from gtool.core.scheduler import Scheduler
+from gtool.config.settings import Config
 from gtool.core.models import SearchParameters
+from gtool.core.scheduler import Scheduler
+from gtool.infrastructure.auth import GoogleAuth
+from gtool.infrastructure.error_categorizer import ErrorCategorizer
+from gtool.infrastructure.retry import RetryPolicy
 from gtool.infrastructure.service_factory import ServiceFactory
+from gtool.utils.datetime import parse_date_range, parse_time_option
 
 logging.basicConfig(
     level=logging.ERROR,

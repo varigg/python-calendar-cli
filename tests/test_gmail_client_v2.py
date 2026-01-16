@@ -1,21 +1,21 @@
-"""Tests for GMailClientV2 - composition-based Gmail client.
+"""Tests for GmailClient - composition-based Gmail client.
 
 Tests Gmail API operations using composition pattern.
 No @patch decorators - all dependencies injected via constructor.
 """
 
-from caltool.gmail_client_v2 import GMailClientV2
+from gtool.clients.gmail import GmailClient
 
 
 def test_gmail_client_v2_initialization(mock_service_factory, mock_retry_policy):
-    """FR-005: GMailClientV2 should initialize with dependencies via constructor."""
-    client = GMailClientV2(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
+    """FR-005: GmailClient should initialize with dependencies via constructor."""
+    client = GmailClient(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
     assert client._service_factory == mock_service_factory
     assert client._retry_policy == mock_retry_policy
 
 
 def test_gmail_client_v2_list_messages(mock_google_service):
-    """FR-005: GMailClientV2.list_messages() should return message list."""
+    """FR-005: GmailClient.list_messages() should return message list."""
     mock_google_service.users.return_value.messages.return_value.list.return_value.execute.return_value = {
         "messages": [
             {"id": "msg1", "threadId": "thread1"},
@@ -24,7 +24,7 @@ def test_gmail_client_v2_list_messages(mock_google_service):
         "resultSizeEstimate": 2,
     }
 
-    client = GMailClientV2(service_factory=None, service=mock_google_service)
+    client = GmailClient(service_factory=None, service=mock_google_service)
     messages = client.list_messages(query="is:unread", limit=10)
 
     assert len(messages) == 2
@@ -32,7 +32,7 @@ def test_gmail_client_v2_list_messages(mock_google_service):
 
 
 def test_gmail_client_v2_get_message(mock_google_service):
-    """FR-005: GMailClientV2.get_message() should return message details."""
+    """FR-005: GmailClient.get_message() should return message details."""
     mock_google_service.users.return_value.messages.return_value.get.return_value.execute.return_value = {
         "id": "msg1",
         "threadId": "thread1",
@@ -46,7 +46,7 @@ def test_gmail_client_v2_get_message(mock_google_service):
         },
     }
 
-    client = GMailClientV2(service_factory=None, service=mock_google_service)
+    client = GmailClient(service_factory=None, service=mock_google_service)
     message = client.get_message("msg1")
 
     assert message["id"] == "msg1"
@@ -54,10 +54,10 @@ def test_gmail_client_v2_get_message(mock_google_service):
 
 
 def test_gmail_client_v2_delete_message(mock_google_service):
-    """FR-005: GMailClientV2.delete_message() should delete a message."""
+    """FR-005: GmailClient.delete_message() should delete a message."""
     mock_google_service.users.return_value.messages.return_value.delete.return_value.execute.return_value = None
 
-    client = GMailClientV2(service_factory=None, service=mock_google_service)
+    client = GmailClient(service_factory=None, service=mock_google_service)
     result = client.delete_message("msg1")
 
     # delete_message returns None on success

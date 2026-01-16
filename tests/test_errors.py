@@ -6,7 +6,7 @@ import click
 import google.auth.exceptions
 import pytest
 
-import caltool.errors as errors
+import gtool.cli.errors as errors
 
 
 def test_handle_cli_exception_google_auth_error(monkeypatch):

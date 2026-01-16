@@ -3,7 +3,7 @@ import os
 import tempfile
 from unittest.mock import patch
 
-from caltool.config import DEFAULTS, Config
+from gtool.config import DEFAULTS, Config
 
 
 class TestConfig:

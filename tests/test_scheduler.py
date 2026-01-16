@@ -9,7 +9,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from caltool.scheduler import Scheduler, SearchParameters
+from gtool.core.models import SearchParameters
+from gtool.core.scheduler import Scheduler
 
 
 @pytest.fixture

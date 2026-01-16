@@ -16,47 +16,6 @@ wheels = [
 ]
 
 [[package]]
-name = "caltool"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "click" },
-    { name = "colorama" },
-    { name = "google-api-python-client" },
-    { name = "google-auth" },
-    { name = "google-auth-oauthlib" },
-    { name = "platformdirs" },
-    { name = "requests" },
-    { name = "tabulate" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.1.8,<9.0.0" },
-    { name = "colorama", specifier = ">=0.4.6,<0.5.0" },
-    { name = "google-api-python-client", specifier = ">=2.169.0,<3.0.0" },
-    { name = "google-auth", specifier = ">=2.39.0,<3.0.0" },
-    { name = "google-auth-oauthlib", specifier = ">=1.2.2,<2.0.0" },
-    { name = "platformdirs", specifier = ">=4.3.8" },
-    { name = "requests", specifier = ">=2.32.3,<3.0.0" },
-    { name = "tabulate", specifier = ">=0.9.0,<0.10.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
-    { name = "ruff", specifier = ">=0.12.0" },
-]
-
-[[package]]
 name = "certifi"
 version = "2025.4.26"
 source = { registry = "https://pypi.org/simple" }
@@ -245,6 +204,47 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/39/24/33db22342cf4a2ea27c9955e6713140fedd51e8b141b5ce5260897020f1a/googleapis_common_protos-1.70.0.tar.gz", hash = "sha256:0e1b44e0ea153e6594f9f394fef15193a68aaaea2d843f83e2742717ca753257", size = 145903, upload-time = "2025-04-14T10:17:02.924Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/86/f1/62a193f0227cf15a920390abe675f386dec35f7ae3ffe6da582d3ade42c7/googleapis_common_protos-1.70.0-py3-none-any.whl", hash = "sha256:b8bfcca8c25a2bb253e0e0b0adaf8c00773e5e6af6fd92397576680b807e0fd8", size = 294530, upload-time = "2025-04-14T10:17:01.271Z" },
+]
+
+[[package]]
+name = "gtool"
+version = "0.2.0"
+source = { editable = "." }
+dependencies = [
+    { name = "click" },
+    { name = "colorama" },
+    { name = "google-api-python-client" },
+    { name = "google-auth" },
+    { name = "google-auth-oauthlib" },
+    { name = "platformdirs" },
+    { name = "requests" },
+    { name = "tabulate" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.1.8,<9.0.0" },
+    { name = "colorama", specifier = ">=0.4.6,<0.5.0" },
+    { name = "google-api-python-client", specifier = ">=2.169.0,<3.0.0" },
+    { name = "google-auth", specifier = ">=2.39.0,<3.0.0" },
+    { name = "google-auth-oauthlib", specifier = ">=1.2.2,<2.0.0" },
+    { name = "platformdirs", specifier = ">=4.3.8" },
+    { name = "requests", specifier = ">=2.32.3,<3.0.0" },
+    { name = "tabulate", specifier = ">=0.9.0,<0.10.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "ruff", specifier = ">=0.12.0" },
 ]
 
 [[package]]

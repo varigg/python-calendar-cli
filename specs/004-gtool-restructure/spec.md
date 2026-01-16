@@ -69,22 +69,26 @@ As a developer, I want classes named without legacy suffixes (e.g., `CalendarCli
 ### Functional Requirements
 
 **Package Rename**:
+
 - **FR-001**: Package MUST be renamed from `caltool` to `gtool`
 - **FR-002**: CLI entry point MUST be `gtool` (defined in pyproject.toml)
 - **FR-003**: All internal imports MUST use `gtool` package name
 
 **Directory Structure**:
+
 - **FR-004**: Source MUST be organized into layered directories: `cli/`, `core/`, `clients/`, `infrastructure/`, `config/`, `utils/`
 - **FR-005**: Each layer package MUST have `__init__.py` with public API exports
 - **FR-006**: Dependencies MUST flow inward: cli → core → clients → infrastructure
 
 **Backward Compatibility**:
+
 - **FR-007**: All existing CLI commands MUST work unchanged (`free`, `show-events`, `get-calendars`, `gmail list`, `gmail show-message`, `gmail delete`, `config`)
 - **FR-008**: Config file location (`~/.config/caltool/`) remains unchanged (users with existing configs unaffected)
 - **FR-009**: All 95+ existing tests MUST pass after migration
 - **FR-010**: `caltool` command is NOT provided (clean break). Users with existing scripts will see "command not found". New package distributed as `gtool` only; user awareness is built-in to installation mechanism (`uv tool install gtool`)
 
 **Class Naming**:
+
 - **FR-011**: `GCalClientV2` MUST be renamed to `CalendarClient`
 - **FR-012**: `GMailClientV2` MUST be renamed to `GmailClient`
 - **FR-013**: File names MUST be simplified (e.g., `calendar.py` not `gcal_client_v2.py`)

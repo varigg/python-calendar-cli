@@ -8,6 +8,7 @@
 Rename `caltool` to `gtool` and restructure the codebase into a layered directory architecture. The package name, CLI entry point, and all imports will change from `caltool` to `gtool`. Source code will be organized into six layer packages (cli, core, clients, infrastructure, config, utils) following modern Python best practices. Class names will be simplified (e.g., `GCalClientV2` → `CalendarClient`).
 
 **Technical Approach**:
+
 1. Create new `src/gtool/` directory structure with layer packages
 2. Move files to appropriate layers, updating imports progressively (8-phase plan)
 3. Rename classes and simplify file names
@@ -29,7 +30,7 @@ Rename `caltool` to `gtool` and restructure the codebase into a layered director
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 ✅ **I. Separation of Concerns**: Layered architecture directly implements this principle. Each layer (cli, core, clients, infrastructure, config, utils) has single responsibility with clear boundaries.
 
@@ -120,6 +121,7 @@ src/gtool/
 ### Phase 1: Infrastructure Layer (No Dependencies on Other Layers)
 
 Migrate infrastructure components first since they have no internal dependencies:
+
 1. `error_categorizer.py` → `gtool/infrastructure/error_categorizer.py`
 2. `retry_policy.py` → `gtool/infrastructure/retry.py`
 3. `service_factory.py` → `gtool/infrastructure/service_factory.py`
@@ -128,12 +130,14 @@ Migrate infrastructure components first since they have no internal dependencies
 ### Phase 2: Config and Utils Layers
 
 These have minimal dependencies:
+
 1. `config.py` → `gtool/config/settings.py`
 2. `datetime_utils.py` → `gtool/utils/datetime.py`
 
 ### Phase 3: Clients Layer (Depends on Infrastructure)
 
 Rename classes during migration:
+
 1. `gcal_client_v2.py` → `gtool/clients/calendar.py` (GCalClientV2 → CalendarClient)
 2. `gmail_client_v2.py` → `gtool/clients/gmail.py` (GMailClientV2 → GmailClient)
 
@@ -163,19 +167,19 @@ This refactor simplifies the codebase by introducing clear layer boundaries.
 
 ## File Mapping Reference
 
-| Old Path | New Path | Class Rename |
-|----------|----------|--------------|
-| `caltool/__init__.py` | `gtool/__init__.py` | - |
-| `caltool/cli.py` | `gtool/cli/main.py` | - |
-| `caltool/format.py` | `gtool/cli/formatters.py` | - |
-| `caltool/errors.py` | `gtool/cli/errors.py` | - |
-| `caltool/scheduler.py` | `gtool/core/scheduler.py` | - |
-| `caltool/scheduler.py` (SearchParameters) | `gtool/core/models.py` | - |
-| `caltool/gcal_client_v2.py` | `gtool/clients/calendar.py` | GCalClientV2 → CalendarClient |
-| `caltool/gmail_client_v2.py` | `gtool/clients/gmail.py` | GMailClientV2 → GmailClient |
-| `caltool/google_auth.py` | `gtool/infrastructure/auth.py` | - |
-| `caltool/service_factory.py` | `gtool/infrastructure/service_factory.py` | - |
-| `caltool/retry_policy.py` | `gtool/infrastructure/retry.py` | - |
-| `caltool/error_categorizer.py` | `gtool/infrastructure/error_categorizer.py` | - |
-| `caltool/config.py` | `gtool/config/settings.py` | - |
-| `caltool/datetime_utils.py` | `gtool/utils/datetime.py` | - |
+| Old Path                                  | New Path                                    | Class Rename                  |
+| ----------------------------------------- | ------------------------------------------- | ----------------------------- |
+| `caltool/__init__.py`                     | `gtool/__init__.py`                         | -                             |
+| `caltool/cli.py`                          | `gtool/cli/main.py`                         | -                             |
+| `caltool/format.py`                       | `gtool/cli/formatters.py`                   | -                             |
+| `caltool/errors.py`                       | `gtool/cli/errors.py`                       | -                             |
+| `caltool/scheduler.py`                    | `gtool/core/scheduler.py`                   | -                             |
+| `caltool/scheduler.py` (SearchParameters) | `gtool/core/models.py`                      | -                             |
+| `caltool/gcal_client_v2.py`               | `gtool/clients/calendar.py`                 | GCalClientV2 → CalendarClient |
+| `caltool/gmail_client_v2.py`              | `gtool/clients/gmail.py`                    | GMailClientV2 → GmailClient   |
+| `caltool/google_auth.py`                  | `gtool/infrastructure/auth.py`              | -                             |
+| `caltool/service_factory.py`              | `gtool/infrastructure/service_factory.py`   | -                             |
+| `caltool/retry_policy.py`                 | `gtool/infrastructure/retry.py`             | -                             |
+| `caltool/error_categorizer.py`            | `gtool/infrastructure/error_categorizer.py` | -                             |
+| `caltool/config.py`                       | `gtool/config/settings.py`                  | -                             |
+| `caltool/datetime_utils.py`               | `gtool/utils/datetime.py`                   | -                             |
