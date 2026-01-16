@@ -1,18 +1,17 @@
 """
-Unit tests for errors.py (cli_error).
+Unit tests for errors.py (handle_cli_exception).
 """
+
 import click
+import google.auth.exceptions
 import pytest
 
 import caltool.errors as errors
 
 
-def test_cli_error_raises_abort(monkeypatch):
+def test_handle_cli_exception_google_auth_error(monkeypatch):
     output = []
     monkeypatch.setattr(click, "echo", lambda msg: output.append(msg))
     with pytest.raises(click.Abort):
-        errors.cli_error("Test error", suggestion="Try again", abort=True)
-    assert any("Test error" in o for o in output)
-    assert any("Try again" in o for o in output)
-
-# You can add more tests for non-abort behavior if needed.
+        errors.handle_cli_exception(google.auth.exceptions.GoogleAuthError("auth failed"))
+    assert any("authentication" in o.lower() for o in output)

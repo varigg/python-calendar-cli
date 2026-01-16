@@ -8,6 +8,47 @@ A command-line tool for managing Google Calendar events and availability. Design
 - List available calendars
 - Show upcoming events
 - Interact with Google Calendar via the command line
+- **New:** Manage Gmail messages (list, read, delete) with Gmail API integration
+
+## Gmail Integration
+
+`calendarcli` now supports Gmail management alongside Calendar features.
+
+### Enabling Gmail
+
+During `caltool config`, you'll be asked if you want to enable Gmail access. Choose "yes" to add Gmail scopes to your configuration. You can select:
+
+- **Read-only access**: View and search messages
+- **Modify access**: View, search, and delete messages
+
+### Gmail Commands
+
+```sh
+# List unread messages (limit 5)
+caltool gmail list --query "is:unread" --limit 5
+
+# List messages from a specific sender
+caltool gmail list --query "from:user@example.com" --limit 10
+
+# Show full details of a message
+caltool gmail show-message <message_id>
+
+# Show message in minimal format
+caltool gmail show-message <message_id> --format minimal
+
+# Delete a message (with confirmation)
+caltool gmail delete <message_id>
+
+# Delete a message (skip confirmation)
+caltool gmail delete <message_id> --confirm
+```
+
+### Gmail Scope Requirements
+
+- To list and view messages: `https://www.googleapis.com/auth/gmail.readonly`
+- To delete messages: `https://www.googleapis.com/auth/gmail.modify`
+
+If you change scopes, you'll need to re-authenticate. Delete `token.json` and run any command to trigger a new OAuth flow.
 
 ## Installation
 

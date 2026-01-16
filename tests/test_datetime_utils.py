@@ -1,6 +1,7 @@
 """
 Unit tests for datetime_utils.py
 """
+
 import datetime
 import zoneinfo
 
@@ -65,7 +66,6 @@ def test_weekday_plus_1():
     assert isinstance(end, datetime.datetime)
     assert start.date() == thursday
     assert end.date() == friday
-
 
 
 def test_invalid_range():
@@ -167,10 +167,7 @@ def test_to_zulutime_naive():
 
 def test_format_event_time_regular_event():
     """Test format_event_time with regular timed event."""
-    event = {
-        "start": {"dateTime": "2025-05-02T10:00:00-07:00"},
-        "end": {"dateTime": "2025-05-02T11:30:00-07:00"}
-    }
+    event = {"start": {"dateTime": "2025-05-02T10:00:00-07:00"}, "end": {"dateTime": "2025-05-02T11:30:00-07:00"}}
     result = format_event_time(event, "America/Los_Angeles")
     assert "2025-05-02" in result
     assert "10:00" in result
@@ -180,10 +177,7 @@ def test_format_event_time_regular_event():
 
 def test_format_event_time_all_day_event():
     """Test format_event_time with all-day event."""
-    event = {
-        "start": {"date": "2025-05-02"},
-        "end": {"date": "2025-05-03"}
-    }
+    event = {"start": {"date": "2025-05-02"}, "end": {"date": "2025-05-03"}}
     result = format_event_time(event, "America/Los_Angeles")
     assert result == "2025-05-02 (All Day)"
 
@@ -192,7 +186,7 @@ def test_format_event_time_with_timezone():
     """Test format_event_time with timezone conversion."""
     event = {
         "start": {"dateTime": "2025-05-02T10:00:00Z"},  # UTC
-        "end": {"dateTime": "2025-05-02T11:00:00Z"}
+        "end": {"dateTime": "2025-05-02T11:00:00Z"},
     }
     result = format_event_time(event, "America/Los_Angeles")
     # Should convert from UTC to Pacific (7 hours behind)
@@ -202,10 +196,7 @@ def test_format_event_time_with_timezone():
 
 def test_format_event_time_duration_minutes_only():
     """Test format_event_time with duration less than an hour."""
-    event = {
-        "start": {"dateTime": "2025-05-02T10:00:00-07:00"},
-        "end": {"dateTime": "2025-05-02T10:45:00-07:00"}
-    }
+    event = {"start": {"dateTime": "2025-05-02T10:00:00-07:00"}, "end": {"dateTime": "2025-05-02T10:45:00-07:00"}}
     result = format_event_time(event, "America/Los_Angeles")
     assert "45m" in result
     assert "0h" not in result  # Should not show 0 hours
@@ -213,10 +204,7 @@ def test_format_event_time_duration_minutes_only():
 
 def test_format_event_time_invalid_data():
     """Test format_event_time with invalid event data falls back gracefully."""
-    event = {
-        "start": {"dateTime": "invalid"},
-        "end": {"dateTime": "also-invalid"}
-    }
+    event = {"start": {"dateTime": "invalid"}, "end": {"dateTime": "also-invalid"}}
     result = format_event_time(event, "America/Los_Angeles")
     # Should return the raw strings without crashing
     assert "invalid" in result
@@ -225,10 +213,7 @@ def test_format_event_time_invalid_data():
 
 def test_format_event_time_with_invalid_timezone():
     """Test format_event_time with invalid timezone falls back gracefully."""
-    event = {
-        "start": {"dateTime": "2025-05-02T10:00:00-07:00"},
-        "end": {"dateTime": "2025-05-02T11:00:00-07:00"}
-    }
+    event = {"start": {"dateTime": "2025-05-02T10:00:00-07:00"}, "end": {"dateTime": "2025-05-02T11:00:00-07:00"}}
     # Should not crash with invalid timezone
     result = format_event_time(event, "Invalid/Timezone")
     assert "2025-05-02" in result

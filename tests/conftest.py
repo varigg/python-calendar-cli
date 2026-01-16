@@ -1,4 +1,5 @@
 """Shared test fixtures for the calendarcli test suite."""
+
 import datetime
 from unittest.mock import Mock
 
@@ -65,3 +66,91 @@ def scheduler():
         search_params=search_params,
         calendar_ids=["primary"],
     )
+
+
+# ============================================================================
+# Gmail Mock Fixtures (Phase 2: Foundation)
+# ============================================================================
+
+
+@pytest.fixture
+def mock_gmail_messages():
+    """Sample Gmail messages list response for testing."""
+    return {
+        "messages": [
+            {"id": "msg001", "threadId": "thread001"},
+            {"id": "msg002", "threadId": "thread001"},
+            {"id": "msg003", "threadId": "thread002"},
+        ],
+        "resultSizeEstimate": 3,
+    }
+
+
+@pytest.fixture
+def mock_gmail_message_detail():
+    """Sample Gmail message detail response for testing."""
+    return {
+        "id": "msg001",
+        "threadId": "thread001",
+        "labelIds": ["INBOX", "UNREAD"],
+        "snippet": "This is a test email snippet...",
+        "payload": {
+            "headers": [
+                {"name": "From", "value": "sender@example.com"},
+                {"name": "To", "value": "recipient@example.com"},
+                {"name": "Subject", "value": "Test Subject"},
+                {"name": "Date", "value": "Mon, 15 Jan 2026 10:00:00 -0800"},
+            ],
+            "body": {
+                "size": 42,
+                "data": "VGhpcyBpcyBhIHRlc3QgbWVzc2FnZQ==",  # base64: "This is a test message"
+            },
+        },
+        "internalDate": "1736960400000",
+        "sizeEstimate": 1234,
+    }
+
+
+@pytest.fixture
+def mock_google_auth_response():
+    """Mock Google OAuth2 authentication response for testing."""
+    mock_creds = Mock()
+    mock_creds.valid = True
+    mock_creds.expired = False
+    mock_creds.token = "mock_access_token"
+    mock_creds.refresh_token = "mock_refresh_token"
+    mock_creds.scopes = ["https://www.googleapis.com/auth/calendar.readonly"]
+    return mock_creds
+
+
+@pytest.fixture
+def mock_http_error_429():
+    """Mock HttpError for rate limit (429) testing."""
+    from googleapiclient.errors import HttpError
+    import httplib2
+
+    resp = httplib2.Response({"status": "429"})
+    content = b'{"error": {"code": 429, "message": "Rate limit exceeded"}}'
+    return HttpError(resp, content)
+
+
+@pytest.fixture
+def mock_http_error_403():
+    """Mock HttpError for quota exceeded (403) testing."""
+    from googleapiclient.errors import HttpError
+    import httplib2
+
+    resp = httplib2.Response({"status": "403"})
+    content = b'{"error": {"code": 403, "message": "Quota exceeded"}}'
+    return HttpError(resp, content)
+
+
+@pytest.fixture
+def mock_http_error_401():
+    """Mock HttpError for authentication failure (401) testing."""
+    from googleapiclient.errors import HttpError
+    import httplib2
+
+    resp = httplib2.Response({"status": "401"})
+    content = b'{"error": {"code": 401, "message": "Invalid credentials"}}'
+    return HttpError(resp, content)

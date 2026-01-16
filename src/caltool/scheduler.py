@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class SearchParameters:
     start_date: datetime.date
@@ -14,6 +15,7 @@ class SearchParameters:
     end_time: datetime.time
     duration: int
     timezone: str
+
 
 class Scheduler:
     """

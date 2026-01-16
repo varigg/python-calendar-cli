@@ -131,3 +131,10 @@ cython_debug/
 
 # VS Code settings
 .vscode/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/
