@@ -1,5 +1,6 @@
 import json
 import logging
+import google.auth.exceptions as google_auth_exceptions
 
 import click
 from colorama import Fore, Style
@@ -38,9 +39,11 @@ def cli(ctx, debug):
     config = Config()
     try:
         config.validate()
-    except Exception as e:
+    except (click.UsageError, CLIError) as e:
         click.echo(click.style(f"Config error: {e}", fg="red"))
         raise click.Abort()
+    except google_auth_exceptions.GoogleAuthError as e:
+        handle_cli_exception(e)
     ctx.obj = config
 
 
@@ -95,7 +98,7 @@ def free(config, date_range, duration, availability_start, availability_end, tim
                 s_formatted = s.strftime("%a %m/%d %I:%M %p")
                 e_formatted = e.strftime("%I:%M %p")
                 print(f"{s_formatted} - {e_formatted}")
-    except Exception as e:
+    except (CLIError, google_auth_exceptions.GoogleAuthError) as e:
         handle_cli_exception(e)
 
 
@@ -107,7 +110,7 @@ def get_calendars(config):
         calendars = client.get_calendar_list()
         print(Fore.CYAN + "Available Calendars:" + Style.RESET_ALL)
         print(format_calendars_table(calendars))
-    except Exception as e:
+    except (CLIError, google_auth_exceptions.GoogleAuthError) as e:
         handle_cli_exception(e)
 
 
@@ -138,7 +141,7 @@ def show_events(config, date_range):
         # Display events grouped by date
         calendar_colors = get_calendar_colors(calendar_ids)
         print_events_grouped_by_date(events, calendar_colors, calendar_names, tz)
-    except Exception as e:
+    except (CLIError, google_auth_exceptions.GoogleAuthError) as e:
         handle_cli_exception(e)
 
 
@@ -149,7 +152,7 @@ def gmail(config):
     """Gmail management commands."""
     try:
         config.validate_gmail_scopes()
-    except Exception as e:
+    except click.UsageError as e:
         raise CLIError(f"Gmail not enabled. Run 'caltool config' to enable Gmail access. Error: {e}")
 
 
@@ -176,7 +179,7 @@ def gmail_list(config, query, limit):
             click.echo(f"   Thread: {thread_id}")
             click.echo(f"   Preview: {snippet[:80]}...")
             click.echo("")
-    except Exception as e:
+    except (CLIError, google_auth_exceptions.GoogleAuthError) as e:
         handle_cli_exception(e)
 
 
@@ -200,7 +203,7 @@ def gmail_show_message(config, message_id, format_):
 
         click.echo(click.style(f"\nMessage ID: {message_id}", fg="cyan"))
         click.echo(json.dumps(message, indent=2))
-    except Exception as e:
+    except (CLIError, google_auth_exceptions.GoogleAuthError) as e:
         handle_cli_exception(e)
 
 
@@ -219,5 +222,5 @@ def gmail_delete(config, message_id, confirm):
         client = GMailClient(config)
         client.delete_message(message_id=message_id)
         click.echo(click.style(f"Message {message_id} deleted successfully.", fg="green"))
-    except Exception as e:
+    except (CLIError, google_auth_exceptions.GoogleAuthError) as e:
         handle_cli_exception(e)
