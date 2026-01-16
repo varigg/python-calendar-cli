@@ -74,44 +74,6 @@ def scheduler():
 
 
 @pytest.fixture
-def mock_gmail_messages():
-    """Sample Gmail messages list response for testing."""
-    return {
-        "messages": [
-            {"id": "msg001", "threadId": "thread001"},
-            {"id": "msg002", "threadId": "thread001"},
-            {"id": "msg003", "threadId": "thread002"},
-        ],
-        "resultSizeEstimate": 3,
-    }
-
-
-@pytest.fixture
-def mock_gmail_message_detail():
-    """Sample Gmail message detail response for testing."""
-    return {
-        "id": "msg001",
-        "threadId": "thread001",
-        "labelIds": ["INBOX", "UNREAD"],
-        "snippet": "This is a test email snippet...",
-        "payload": {
-            "headers": [
-                {"name": "From", "value": "sender@example.com"},
-                {"name": "To", "value": "recipient@example.com"},
-                {"name": "Subject", "value": "Test Subject"},
-                {"name": "Date", "value": "Mon, 15 Jan 2026 10:00:00 -0800"},
-            ],
-            "body": {
-                "size": 42,
-                "data": "VGhpcyBpcyBhIHRlc3QgbWVzc2FnZQ==",  # base64: "This is a test message"
-            },
-        },
-        "internalDate": "1736960400000",
-        "sizeEstimate": 1234,
-    }
-
-
-@pytest.fixture
 def mock_google_auth_response():
     """Mock Google OAuth2 authentication response for testing."""
     mock_creds = Mock()
@@ -124,33 +86,92 @@ def mock_google_auth_response():
 
 
 @pytest.fixture
-def mock_http_error_429():
-    """Mock HttpError for rate limit (429) testing."""
-    from googleapiclient.errors import HttpError
+def make_http_error():
+    """Factory fixture to create HttpError for any status code."""
     import httplib2
+    from googleapiclient.errors import HttpError
 
-    resp = httplib2.Response({"status": "429"})
-    content = b'{"error": {"code": 429, "message": "Rate limit exceeded"}}'
-    return HttpError(resp, content)
+    def _make_error(status: int, message: str = "Error"):
+        resp = httplib2.Response({"status": str(status)})
+        content = f'{{"error": {{"code": {status}, "message": "{message}"}}}}'.encode()
+        return HttpError(resp, content)
+
+    return _make_error
 
 
 @pytest.fixture
-def mock_http_error_403():
-    """Mock HttpError for quota exceeded (403) testing."""
-    from googleapiclient.errors import HttpError
-    import httplib2
-
-    resp = httplib2.Response({"status": "403"})
-    content = b'{"error": {"code": 403, "message": "Quota exceeded"}}'
-    return HttpError(resp, content)
+def mock_http_error_401(make_http_error):
+    """Mock HttpError for authentication failure (401)."""
+    return make_http_error(401, "Invalid credentials")
 
 
 @pytest.fixture
-def mock_http_error_401():
-    """Mock HttpError for authentication failure (401) testing."""
-    from googleapiclient.errors import HttpError
-    import httplib2
+def mock_http_error_403(make_http_error):
+    """Mock HttpError for quota exceeded (403)."""
+    return make_http_error(403, "Quota exceeded")
 
-    resp = httplib2.Response({"status": "401"})
-    content = b'{"error": {"code": 401, "message": "Invalid credentials"}}'
-    return HttpError(resp, content)
+
+@pytest.fixture
+def mock_http_error_429(make_http_error):
+    """Mock HttpError for rate limit (429)."""
+    return make_http_error(429, "Rate limit exceeded")
+
+
+@pytest.fixture
+def mock_http_error_500(make_http_error):
+    """Mock HttpError for server error (500)."""
+    return make_http_error(500, "Internal server error")
+
+
+@pytest.fixture
+def mock_http_error_400(make_http_error):
+    """Mock HttpError for client error (400)."""
+    return make_http_error(400, "Bad request")
+
+
+@pytest.fixture
+def mock_google_auth():
+    """Mock GoogleAuth instance for composition testing."""
+    mock_auth = Mock()
+    mock_auth.get_credentials.return_value = Mock()
+    return mock_auth
+
+
+@pytest.fixture
+def mock_google_service():
+    """Mock Google API service for composition testing."""
+    mock_service = Mock()
+    return mock_service
+
+
+@pytest.fixture
+def mock_error_categorizer():
+    """Mock ErrorCategorizer for composition testing."""
+    mock_categorizer = Mock()
+    mock_categorizer.categorize.side_effect = lambda err: (
+        "AUTH"
+        if "401" in str(err)
+        else "QUOTA"
+        if "429" in str(err) or "403" in str(err)
+        else "TRANSIENT"
+        if "500" in str(err)
+        else "CLIENT"
+    )
+    return mock_categorizer
+
+
+@pytest.fixture
+def mock_retry_policy():
+    """Mock RetryPolicy for composition testing."""
+    mock_policy = Mock()
+    mock_policy.execute.side_effect = lambda func, *args, **kwargs: func(*args, **kwargs)
+    mock_policy.should_retry.return_value = True
+    return mock_policy
+
+
+@pytest.fixture
+def mock_service_factory():
+    """Mock ServiceFactory for composition testing."""
+    mock_factory = Mock()
+    mock_factory.build_service.return_value = Mock()
+    return mock_factory

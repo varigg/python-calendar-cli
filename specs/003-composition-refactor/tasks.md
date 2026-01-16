@@ -10,11 +10,11 @@
 Goal: Prepare test infrastructure and project structure for composition refactoring.
 Independent Test: All tests pass; project structure ready for feature implementation.
 
-- [ ] T001 Create project structure and documentation skeleton for feature 003
-- [ ] T002 Set up test utilities for composition-based testing (no @patch decorators)
-- [ ] T003 Create mock factories for Google Auth, Service, and HttpError instances
-- [ ] T004 Document testing strategy: constructor injection, mock dependencies, assertions
-- [ ] T005 Verify all 88 existing tests still pass with fresh environment
+- [x] T001 Create project structure and documentation skeleton for feature 003
+- [x] T002 Set up test utilities for composition-based testing (no @patch decorators)
+- [x] T003 Create mock factories for Google Auth, Service, and HttpError instances
+- [x] T004 Document testing strategy: constructor injection, mock dependencies, assertions
+- [x] T005 Verify all 88 existing tests still pass with fresh environment
 
 ## Phase 2: Foundational - User Story 1 (P1) - Extract Reusable Components
 
@@ -30,27 +30,27 @@ Tests: FR-001, FR-002, FR-003, SC-001, SC-002
 
 ### Component 1: ErrorCategorizer
 
-- [ ] T006 [P] Create test suite for ErrorCategorizer in `tests/test_error_categorizer.py`
+- [x] T006 [P] Create test suite for ErrorCategorizer in `tests/test_error_categorizer.py`
   - Tests for 401 → "AUTH" (FR-001)
   - Tests for 429 → "QUOTA" (FR-001)
   - Tests for 500 → "TRANSIENT" (FR-001)
   - Tests for 400 → "CLIENT" (FR-001)
   - Performance test: <1ms per call (SC-001)
-- [ ] T007 [P] Implement ErrorCategorizer class in `src/caltool/error_categorizer.py`
+- [x] T007 [P] Implement ErrorCategorizer class in `src/caltool/error_categorizer.py`
   - `categorize(error: HttpError) -> str` method
   - Handle all error types: AUTH, QUOTA, TRANSIENT, CLIENT
   - Type hints and docstrings
 
 ### Component 2: RetryPolicy
 
-- [ ] T009 [P] Create test suite for RetryPolicy in `tests/test_retry_policy.py`
+- [x] T009 [P] Create test suite for RetryPolicy in `tests/test_retry_policy.py`
   - Tests for initialization with max_retries, delay, ErrorCategorizer
   - Tests for `should_retry()` returning False for AUTH errors (FR-002)
   - Tests for `should_retry()` returning True for QUOTA errors (FR-002)
   - Tests for `execute()` with successful retry (FR-002, SC-002)
   - Tests for `execute()` with max_retries exceeded
   - Tests for exponential backoff behavior
-- [ ] T010 [P] Implement RetryPolicy class in `src/caltool/retry_policy.py`
+- [x] T010 [P] Implement RetryPolicy class in `src/caltool/retry_policy.py`
   - `__init__(max_retries: int, delay: float, error_categorizer: ErrorCategorizer)`
   - `should_retry(error_category: str) -> bool` method
   - `execute(func: Callable, *args, **kwargs) -> Any` method with retry loop
@@ -59,13 +59,13 @@ Tests: FR-001, FR-002, FR-003, SC-001, SC-002
 
 ### Component 3: ServiceFactory
 
-- [ ] T012 [P] Create test suite for ServiceFactory in `tests/test_service_factory.py`
+- [x] T012 [P] Create test suite for ServiceFactory in `tests/test_service_factory.py`
   - Tests for initialization with GoogleAuth instance
   - Tests for `build_service("calendar", "v3")` returns working service (FR-003)
   - Tests for `build_service("gmail", "v1")` returns working service
   - Tests for error handling when auth fails
   - Mock google_auth.service_account and googleapiclient.discovery
-- [ ] T013 [P] Implement ServiceFactory class in `src/caltool/service_factory.py`
+- [x] T013 [P] Implement ServiceFactory class in `src/caltool/service_factory.py`
   - `__init__(auth: GoogleAuth)`
   - `build_service(api_name: str, api_version: str) -> Any` method
   - Uses `googleapiclient.discovery.build()`
@@ -73,9 +73,9 @@ Tests: FR-001, FR-002, FR-003, SC-001, SC-002
 
 ### Validation Tasks
 
-- [ ] T015 Run all tests for Phase 2 components: pytest tests/test_error_categorizer.py tests/test_retry_policy.py tests/test_service_factory.py
-- [ ] T016 Verify zero @patch decorators in Phase 2 tests
-- [ ] T017 Run full test suite: pytest tests/ (some old tests may fail during migration - expected)
+- [x] T015 Run all tests for Phase 2 components: pytest tests/test_error_categorizer.py tests/test_retry_policy.py tests/test_service_factory.py
+- [x] T016 Verify zero @patch decorators in Phase 2 tests
+- [x] T017 Run full test suite: pytest tests/ (some old tests may fail during migration - expected)
 
 ## Phase 3: User Story 2 (P2) - Create Composition-Based Calendar Client
 
@@ -85,7 +85,7 @@ Tests: FR-004, SC-003, SC-004
 
 ### GCalClientV2 Implementation
 
-- [ ] T019 [P] [US2] Create test suite for GCalClientV2 in `tests/test_gcal_client_v2.py`
+- [x] T019 [P] [US2] Create test suite for GCalClientV2 in `tests/test_gcal_client_v2.py`
 
   - Tests for `__init__(service_factory: ServiceFactory, retry_policy: RetryPolicy = None, service: Any = None)`
   - Tests for `get_calendar_list()` returns calendars without @patch (FR-004, FR-007)
@@ -96,13 +96,13 @@ Tests: FR-004, SC-003, SC-004
   - Verify each method testable in <10 lines of code (SC-004)
   - Mock service via constructor injection
 
-- [ ] T020 [P] [US2] Extract public API contract from existing GCalClient
+- [x] T020 [P] [US2] Extract public API contract from existing GCalClient
 
   - Document all public methods: get_calendar_list(), get_events(), etc.
   - Document all parameter types and return types
   - Ensure GCalClientV2 will have identical public API
 
-- [ ] T021 [P] [US2] Implement GCalClientV2 class in `src/caltool/gcal_client_v2.py`
+- [x] T021 [P] [US2] Implement GCalClientV2 class in `src/caltool/gcal_client_v2.py`
 
   - `__init__(service_factory: ServiceFactory, retry_policy: RetryPolicy = None, service: Any = None)`
   - `get_calendar_list() -> List[Dict]` method
@@ -113,8 +113,8 @@ Tests: FR-004, SC-003, SC-004
   - Type hints and docstrings
   - Zero inheritance from GoogleAPIClient
 
-- [ ] T022 [US2] Run test suite for GCalClientV2: pytest tests/test_gcal_client_v2.py
-- [ ] T023 [US2] Verify zero @patch decorators in GCalClientV2 tests
+- [x] T022 [US2] Run test suite for GCalClientV2: pytest tests/test_gcal_client_v2.py
+- [x] T023 [US2] Verify zero @patch decorators in GCalClientV2 tests
 
 ## Phase 4: User Story 3 (P3) - Create Composition-Based Gmail Client
 
@@ -124,7 +124,7 @@ Tests: FR-005, SC-003, SC-004
 
 ### GMailClientV2 Implementation
 
-- [ ] T025 [P] [US3] Create test suite for GMailClientV2 in `tests/test_gmail_client_v2.py`
+- [x] T025 [P] [US3] Create test suite for GMailClientV2 in `tests/test_gmail_client_v2.py`
 
   - Tests for `__init__(service_factory: ServiceFactory, retry_policy: RetryPolicy = None, service: Any = None)`
   - Tests for `list_messages(query: str, limit: int)` returns messages without @patch (FR-005, FR-007)
@@ -135,14 +135,14 @@ Tests: FR-005, SC-003, SC-004
   - Verify each method testable in <10 lines of code (SC-004)
   - Mock service and scope validation via constructor injection
 
-- [ ] T026 [P] [US3] Extract public API contract from existing GMailClient
+- [x] T026 [P] [US3] Extract public API contract from existing GMailClient
 
   - Document all public methods: list_messages(), get_message(), delete_message()
   - Document all parameter types and return types
   - Document scope requirements
   - Ensure GMailClientV2 will have identical public API
 
-- [ ] T027 [P] [US3] Implement GMailClientV2 class in `src/caltool/gmail_client_v2.py`
+- [x] T027 [P] [US3] Implement GMailClientV2 class in `src/caltool/gmail_client_v2.py`
 
   - `__init__(service_factory: ServiceFactory, retry_policy: RetryPolicy = None, service: Any = None)`
   - `list_messages(query: str, limit: int) -> List[Message]` method
@@ -153,8 +153,8 @@ Tests: FR-005, SC-003, SC-004
   - Type hints and docstrings
   - Zero inheritance from GoogleAPIClient
 
-- [ ] T028 [US3] Run test suite for GMailClientV2: pytest tests/test_gmail_client_v2.py
-- [ ] T029 [US3] Verify zero @patch decorators in GMailClientV2 tests
+- [x] T028 [US3] Run test suite for GMailClientV2: pytest tests/test_gmail_client_v2.py
+- [x] T029 [US3] Verify zero @patch decorators in GMailClientV2 tests
 
 ## Phase 5: User Story 4 (P4) - Update CLI to Use Composed Clients
 
@@ -164,36 +164,36 @@ Tests: FR-008, SC-005
 
 ### CLI Integration
 
-- [ ] T031 [P] [US4] Create instantiation factories for composed clients in `src/caltool/cli.py`
+- [x] T031 [P] [US4] Create instantiation factories for composed clients in `src/caltool/cli.py`
 
   - Factory function to create GCalClientV2 with proper dependencies
   - Factory function to create GMailClientV2 with proper dependencies
   - Ensure factories use same authentication flow as before
 
-- [ ] T032 [P] [US4] Refactor CLI calendar commands to use GCalClientV2
+- [x] T032 [P] [US4] Refactor CLI calendar commands to use GCalClientV2
 
   - Replace GCalClient usage with GCalClientV2 in `free` command
   - Replace GCalClient usage in `show-events` command
   - Replace GCalClient usage in `get-calendars` command
   - Verify public API identical (no parameter changes)
 
-- [ ] T033 [P] [US4] Refactor CLI Gmail commands to use GMailClientV2
+- [x] T033 [P] [US4] Refactor CLI Gmail commands to use GMailClientV2
 
   - Replace GMailClient usage with GMailClientV2 in `gmail list` command
   - Replace GMailClient usage in `gmail show-message` command
   - Replace GMailClient usage in `gmail delete` command
   - Verify public API identical (no parameter changes)
 
-- [ ] T034 [US4] Update CLI tests to use composed clients where needed: tests/test_cli.py
+- [x] T034 [US4] Update CLI tests to use composed clients where needed: tests/test_cli.py
   - Keep tests that verify CLI commands work end-to-end
   - Replace tests that verify old internal structure (GoogleAPIClient, @patch usage)
   - No changes to CLI command behavior or interface
-- [ ] T035 [US4] Run updated CLI tests: pytest tests/test_cli.py (should all pass)
-- [ ] T036 [US4] Verify backward compatibility: CLI commands unchanged, same arguments and output
+- [x] T035 [US4] Run updated CLI tests: pytest tests/test_cli.py (should all pass)
+- [x] T036 [US4] Verify backward compatibility: CLI commands unchanged, same arguments and output
 
 ### Performance Validation
 
-- [ ] T037 [US4] Benchmark test suite execution time before/after refactoring
+- [x] T037 [US4] Benchmark test suite execution time before/after refactoring
   - Measure existing test suite execution time (baseline)
   - Measure refactored test suite execution time
   - Verify 30%+ speedup due to eliminated @patch overhead (SC-006)
@@ -221,14 +221,14 @@ Goal: Clean up, deprecate old clients, finalize documentation, ensure code quali
 
 ### Documentation & Type Safety
 
-- [ ] T041 Add comprehensive docstrings to all three components
+- [x] T041 Add comprehensive docstrings to all three components
 
   - ErrorCategorizer: Document error categorization strategy
   - RetryPolicy: Document retry logic and backoff strategy
   - ServiceFactory: Document Google API service building
   - Include type hints for all parameters and return types
 
-- [ ] T042 Add comprehensive docstrings to GCalClientV2 and GMailClientV2
+- [x] T042 Add comprehensive docstrings to GCalClientV2 and GMailClientV2
 
   - Document constructor dependencies and optional parameters
   - Document all public methods with parameters and return types
@@ -241,7 +241,7 @@ Goal: Clean up, deprecate old clients, finalize documentation, ensure code quali
 
 ### Final Validation
 
-- [ ] T044 Run all tests with coverage: pytest --cov=src/caltool tests/
+- [x] T044 Run all tests with coverage: pytest --cov=src/caltool tests/
 
   - Verify Phase 2, 3, 4 components all >95% coverage
   - Verify new composed client tests >95% coverage
@@ -253,7 +253,7 @@ Goal: Clean up, deprecate old clients, finalize documentation, ensure code quali
   - Verify ruff formatting passes
   - Verify all other hooks pass
 
-- [ ] T046 Run integration test: full CLI workflow
+- [x] T046 Run integration test: full CLI workflow
 
   - Test `calendarcli get-calendars` works end-to-end
   - Test `calendarcli free today` works end-to-end
@@ -272,7 +272,7 @@ Goal: Clean up, deprecate old clients, finalize documentation, ensure code quali
   - Document how to add new composed clients
   - Document testing strategy without @patch decorators
 
-- [ ] T049 Final verification: Run full test suite
+- [x] T049 Final verification: Run full test suite
   - Run: pytest tests/
   - Verify all component tests passing
   - Verify all CLI behavior tests passing

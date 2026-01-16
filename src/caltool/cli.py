@@ -1,12 +1,13 @@
 import json
 import logging
-import google.auth.exceptions as google_auth_exceptions
 
 import click
+import google.auth.exceptions as google_auth_exceptions
 from colorama import Fore, Style
 
 from .config import Config
 from .datetime_utils import parse_date_range, parse_time_option
+from .error_categorizer import ErrorCategorizer
 from .errors import CLIError, handle_cli_exception
 from .format import (
     format_calendars_table,
@@ -14,9 +15,12 @@ from .format import (
     pretty_print_slots,
     print_events_grouped_by_date,
 )
-from .gcal_client import GCalClient
-from .gmail_client import GMailClient
+from .gcal_client_v2 import GCalClientV2
+from .gmail_client_v2 import GMailClientV2
+from .google_auth import GoogleAuth
+from .retry_policy import RetryPolicy
 from .scheduler import Scheduler, SearchParameters
+from .service_factory import ServiceFactory
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -24,6 +28,27 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
+
+# --- Client Factory Functions ---
+def _create_client_dependencies(config):
+    """Create shared dependencies for API clients."""
+    auth = GoogleAuth(config)
+    service_factory = ServiceFactory(auth=auth)
+    retry_policy = RetryPolicy(max_retries=3, delay=2.0, error_categorizer=ErrorCategorizer())
+    return service_factory, retry_policy
+
+
+def create_calendar_client(config):
+    """Create a composed Calendar client with retry policy."""
+    service_factory, retry_policy = _create_client_dependencies(config)
+    return GCalClientV2(service_factory=service_factory, retry_policy=retry_policy)
+
+
+def create_gmail_client(config):
+    """Create a composed Gmail client with retry policy."""
+    service_factory, retry_policy = _create_client_dependencies(config)
+    return GMailClientV2(service_factory=service_factory, retry_policy=retry_policy)
 
 
 # --- Unified CLI Group ---
@@ -76,7 +101,7 @@ def free(config, date_range, duration, availability_start, availability_end, tim
     avail_end_str = availability_end if availability_end else config.get("AVAILABILITY_END")
 
     try:
-        client = GCalClient(config)
+        client = create_calendar_client(config)
         search_params = SearchParameters(
             start_date=start_datetime.date(),
             end_date=end_datetime.date(),
@@ -106,7 +131,7 @@ def free(config, date_range, duration, availability_start, availability_end, tim
 @click.pass_obj
 def get_calendars(config):
     try:
-        client = GCalClient(config)
+        client = create_calendar_client(config)
         calendars = client.get_calendar_list()
         print(Fore.CYAN + "Available Calendars:" + Style.RESET_ALL)
         print(format_calendars_table(calendars))
@@ -125,7 +150,7 @@ def show_events(config, date_range):
     start_datetime, end_datetime = parse_date_range(date_range, tz)
 
     try:
-        client = GCalClient(config)
+        client = create_calendar_client(config)
         calendar_ids = config.get("CALENDAR_IDS")
 
         # Build calendar_id -> summary mapping
@@ -163,8 +188,8 @@ def gmail(config):
 def gmail_list(config, query, limit):
     """List Gmail messages matching the query."""
     try:
-        client = GMailClient(config)
-        messages = client.list_messages(query=query, max_results=limit)
+        client = create_gmail_client(config)
+        messages = client.list_messages(query=query, limit=limit)
 
         if not messages:
             click.echo(click.style("No messages found.", fg="yellow"))
@@ -198,8 +223,8 @@ def gmail_list(config, query, limit):
 def gmail_show_message(config, message_id, format_):
     """Show details of a specific Gmail message."""
     try:
-        client = GMailClient(config)
-        message = client.get_message(message_id=message_id, format_=format_)
+        client = create_gmail_client(config)
+        message = client.get_message(message_id=message_id)
 
         click.echo(click.style(f"\nMessage ID: {message_id}", fg="cyan"))
         click.echo(json.dumps(message, indent=2))
@@ -219,7 +244,7 @@ def gmail_delete(config, message_id, confirm):
                 click.echo(click.style("Deletion cancelled.", fg="yellow"))
                 return
 
-        client = GMailClient(config)
+        client = create_gmail_client(config)
         client.delete_message(message_id=message_id)
         click.echo(click.style(f"Message {message_id} deleted successfully.", fg="green"))
     except (CLIError, google_auth_exceptions.GoogleAuthError) as e:

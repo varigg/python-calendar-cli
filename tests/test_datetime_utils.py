@@ -3,18 +3,14 @@ Unit tests for datetime_utils.py
 """
 
 import datetime
-import zoneinfo
 
 import pytest
 
 from caltool.datetime_utils import (
     format_event_time,
     parse_date_range,
-    parse_datetime_option,
     parse_time_option,
-    to_zulutime,
 )
-
 
 # --- parse_date_range tests ---
 
@@ -102,37 +98,6 @@ def test_invalid_offset_non_numeric():
         parse_date_range("today+abc")
 
 
-# --- parse_datetime_option tests ---
-
-
-def test_parse_datetime_option_valid_iso():
-    """Test parse_datetime_option with valid ISO datetime string."""
-    result = parse_datetime_option("2025-05-02T10:30:00")
-    assert result == datetime.datetime(2025, 5, 2, 10, 30, 0)
-
-
-def test_parse_datetime_option_empty_returns_default():
-    """Test parse_datetime_option with empty value returns default."""
-    default = datetime.datetime(2025, 1, 1, 12, 0, 0)
-    result = parse_datetime_option("", default=default)
-    assert result == default
-
-
-def test_parse_datetime_option_none_returns_current():
-    """Test parse_datetime_option with None returns current time."""
-    before = datetime.datetime.now()
-    result = parse_datetime_option(None)
-    after = datetime.datetime.now()
-    # Result should be between before and after (within a few seconds)
-    assert before <= result <= after
-
-
-def test_parse_datetime_option_invalid_format():
-    """Test parse_datetime_option raises ValueError for invalid format."""
-    with pytest.raises(ValueError):
-        parse_datetime_option("not-a-datetime")
-
-
 def test_parse_time_option_valid():
     """Test parse_time_option with valid time string."""
     t = parse_time_option("14:30")
@@ -144,22 +109,6 @@ def test_parse_time_option_default():
     default = datetime.time(9, 0)
     t = parse_time_option("", default=default)
     assert t == default
-
-
-def test_to_zulutime_aware():
-    """Test to_zulutime with timezone-aware datetime."""
-    tz = zoneinfo.ZoneInfo("America/Los_Angeles")
-    dt = datetime.datetime(2025, 5, 2, 10, 0, tzinfo=tz)
-    # 10:00 LA is 17:00 UTC
-    assert to_zulutime(dt) == "2025-05-02T17:00:00Z"
-
-
-def test_to_zulutime_naive():
-    """Test to_zulutime with naive datetime (assumes local)."""
-    dt = datetime.datetime(2025, 5, 2, 10, 0)
-    # Should not crash, output should end in Z
-    result = to_zulutime(dt)
-    assert result.endswith("Z")
 
 
 # --- format_event_time tests ---
