@@ -75,13 +75,13 @@
 
 **Purpose**: Migrate business logic, extract SearchParameters
 
-- [ ] T021 [P] [US2] Create `gtool/core/models.py` with `SearchParameters` dataclass (extracted from scheduler)
-- [ ] T022 [US2] Copy `scheduler.py` → `gtool/core/scheduler.py`
+- [x] T021 [P] [US2] Create `gtool/core/models.py` with `SearchParameters` dataclass (extracted from scheduler)
+- [x] T022 [US2] Copy `scheduler.py` → `gtool/core/scheduler.py`
   - Import `SearchParameters` from `gtool.core.models`
   - Update all internal imports to `gtool.*`
-- [ ] T023 [US2] Update `gtool/core/__init__.py` with public exports
+- [x] T023 [US2] Update `gtool/core/__init__.py` with public exports
 
-**Checkpoint**: Core layer complete
+**Checkpoint**: ✅ Core layer complete
 
 ---
 
