@@ -15,4 +15,5 @@ def test_get_calendar_colors_assigns_colors():
     assert colors["e"] == "yellow"
     assert colors["f"] == "green"  # wraps around
 
+
 # You can add more tests for format_event and pretty_print_slots using mocks if needed.

@@ -1,8 +1,8 @@
 # Feature Specification: Gmail Client Integration & Google Auth Refactoring
 
-**Feature Branch**: `001-gmail-client-refactor`  
-**Created**: 2026-01-15  
-**Status**: Draft  
+**Feature Branch**: `001-gmail-client-refactor`
+**Created**: 2026-01-15
+**Status**: Draft
 **Input**: User description: "Refactor the project to support adding a gmail client and gmail related functionality to the CLI. Pay attention to opportunities for reusing existing functionality (i.e. google auth, ...)"
 
 ## User Scenarios & Testing _(mandatory)_

@@ -1,97 +1,83 @@
+"""Google Calendar API client.
+
+This module provides GCalClient for interacting with the Google Calendar API.
+It inherits from GoogleAPIClient to leverage shared patterns for authentication,
+error handling, and retry logic.
+"""
+
 import datetime
 import logging
-import os.path
-import time
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 from .datetime_utils import to_zulutime
+from .google_client import GoogleAPIClient
 
 logger = logging.getLogger(__name__)
 
 
-# --- Retry Decorator ---
-def retry_on_exception(max_retries=3, delay=1, allowed_exceptions=(Exception,)):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            for attempt in range(max_retries):
-                try:
-                    return func(*args, **kwargs)
-                except allowed_exceptions as e:
-                    logger.warning(f"Attempt {attempt + 1} failed: {e}")
-                    if attempt == max_retries - 1:
-                        logger.error(f"All {max_retries} attempts failed.")
-                        raise
-                    time.sleep(delay)
+class GCalClient(GoogleAPIClient):
+    """Client for Google Calendar API operations.
 
-        return wrapper
-
-    return decorator
-
-
-class GCalClient:
-    """
-    A class to interact with Google Calendar API.
+    Inherits common authentication, error handling, and retry patterns from
+    GoogleAPIClient. Provides calendar-specific methods for listing calendars,
+    fetching busy times, retrieving events, and getting event details.
     """
 
-    def __init__(self, config, service: object | None = None):
-        """
-        Initialize the GCalClient with a Config object.
-        Optionally, inject a mock service for testing.
-        """
-        self.config = config
-        self.credentials_file = os.path.expanduser(config.get("CREDENTIALS_FILE"))
-        self.token_file = os.path.expanduser(config.get("TOKEN_FILE"))
-        self.scopes = config.get("SCOPES")
-        logger.debug(f"GCalClient init: credentials_file={self.credentials_file}, token_file={self.token_file}, scopes={self.scopes}")
-        self.service = service or self.authenticate()
+    API_NAME = "calendar"
+    API_VERSION = "v3"
 
-    def authenticate(self):
-        """
-        Authenticate the user and create a service object for Google Calendar API.
-        """
-        logger.debug(f"Authenticating with credentials_file={self.credentials_file}, token_file={self.token_file}, scopes={self.scopes}")
-        creds = None
-        if os.path.exists(self.token_file):
-            logger.debug(f"Token file exists: {self.token_file}")
-            creds = Credentials.from_authorized_user_file(self.token_file, self.scopes)
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                logger.debug("Credentials expired, attempting refresh.")
-                creds.refresh(Request())
-            else:
-                logger.debug("No valid credentials, starting OAuth flow.")
-                flow = InstalledAppFlow.from_client_secrets_file(self.credentials_file, self.scopes)
-                creds = flow.run_local_server(port=0)
-            with open(self.token_file, "w") as token:
-                token.write(creds.to_json())
-        logger.debug("Google Calendar API client built successfully.")
-        return build("calendar", "v3", credentials=creds)
+    def __init__(self, config, service=None):
+        """Initialize GCalClient for Calendar API.
 
-    @retry_on_exception(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
+        Args:
+            config: Config object with credentials and settings
+            service: Optional pre-built service object (for testing)
+        """
+        super().__init__(config, self.API_NAME, self.API_VERSION, service)
+
+    def _validate_config(self):
+        """Validate calendar-specific configuration.
+
+        Calendar clients don't have special config requirements beyond
+        the base GoogleAPIClient validation.
+        """
+        # Base validation covers CREDENTIALS_FILE, TOKEN_FILE, SCOPES
+        super()._validate_config()
+
+    @GoogleAPIClient.retry(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
     def get_calendar_list(self):
-        """
-        Get list of all available calendars.
-        :return: List of calendars.
+        """Get list of all available calendars.
+
+        Returns:
+            List of calendar objects from Google Calendar API
+
+        Raises:
+            CLIError: If API call fails
         """
         logger.debug("Retrieving list of calendars")
-        try:
-            calendar_list = self.service.calendarList().list().execute()
-            calendars = calendar_list.get("items", [])
-            return calendars
-        except HttpError as e:
-            logger.error(f"Google API error in get_calendar_list: {e}")
-            raise
+        calendar_list = self.service.calendarList().list().execute()
+        calendars = calendar_list.get("items", [])
+        return calendars
 
-    @retry_on_exception(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
+    @GoogleAPIClient.retry(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
     def get_day_busy_times(
         self, calendar_ids: list, day_start: datetime.datetime, day_end: datetime.datetime, timezone: str
     ) -> list:
-        """Get busy times for a specific day within availability hours."""
+        """Get busy times for a specific day within availability hours.
+
+        Args:
+            calendar_ids: List of calendar IDs to query
+            day_start: Start of time range
+            day_end: End of time range
+            timezone: Timezone for the query
+
+        Returns:
+            List of busy time periods
+
+        Raises:
+            CLIError: If API call fails
+        """
         logger.debug(f"Fetching busy times between {day_start} and {day_end}")
         body = {
             "timeMin": to_zulutime(day_start),
@@ -99,41 +85,45 @@ class GCalClient:
             "timeZone": timezone,
             "items": [{"id": cal_id} for cal_id in calendar_ids],
         }
-        try:
-            busy_times = self.service.freebusy().query(body=body).execute()
-            all_busy = []
-            for calendar in busy_times["calendars"].values():
-                all_busy.extend(calendar.get("busy", []))
-            all_busy.sort(key=lambda x: x["start"])
-            return all_busy
-        except HttpError as e:
-            logger.error(f"Google API error in get_day_busy_times: {e}")
-            raise
+        busy_times = self.service.freebusy().query(body=body).execute()
+        all_busy = []
+        for calendar in busy_times["calendars"].values():
+            all_busy.extend(calendar.get("busy", []))
+        all_busy.sort(key=lambda x: x["start"])
+        return all_busy
 
-    @retry_on_exception(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
+    @GoogleAPIClient.retry(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
     def get_event_details(self, calendar_id: str, event_id: str):
-        """
-        Get details of a specific event.
-        :param calendar_id: The ID of the calendar.
-        :param event_id: The ID of the event.
-        :return: Event details.
+        """Get details of a specific event.
+
+        Args:
+            calendar_id: The ID of the calendar
+            event_id: The ID of the event
+
+        Returns:
+            Event details from Google Calendar API
+
+        Raises:
+            CLIError: If API call fails
         """
         logger.debug(f"Retrieving details for event {event_id} in calendar {calendar_id}")
-        try:
-            event = self.service.events().get(calendarId=calendar_id, eventId=event_id).execute()
-            return event
-        except HttpError as e:
-            logger.error(f"Google API error in get_event_details: {e}")
-            raise
+        event = self.service.events().get(calendarId=calendar_id, eventId=event_id).execute()
+        return event
 
-    @retry_on_exception(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
+    @GoogleAPIClient.retry(max_retries=3, delay=2, allowed_exceptions=(HttpError,))
     def get_events(self, calendar_id, start_time=None, end_time=None):
-        """
-        Get events from a specific calendar between start_time and end_time.
-        :param calendar_id: The ID of the calendar
-        :param start_time: datetime, start of time range (optional)
-        :param end_time: datetime, end of time range (optional)
-        :return: List of events
+        """Get events from a specific calendar.
+
+        Args:
+            calendar_id: The ID of the calendar
+            start_time: Start of time range (optional)
+            end_time: End of time range (optional)
+
+        Returns:
+            List of events from Google Calendar API
+
+        Raises:
+            CLIError: If API call fails
         """
         logger.debug(f"Retrieving events for calendar {calendar_id} between {start_time} and {end_time}")
         params = {
@@ -146,13 +136,9 @@ class GCalClient:
             params["timeMin"] = to_zulutime(start_time)
         if end_time:
             params["timeMax"] = to_zulutime(end_time)
-        try:
-            events_result = self.service.events().list(**params).execute()
-            events = events_result.get("items", [])
-            for event in events:
-                event["calendarId"] = calendar_id
-            logger.debug(f"Found {len(events)} events for calendar {calendar_id}")
-            return events
-        except HttpError as e:
-            logger.error(f"Google API error in get_events: {e}")
-            raise
+        events_result = self.service.events().list(**params).execute()
+        events = events_result.get("items", [])
+        for event in events:
+            event["calendarId"] = calendar_id
+        logger.debug(f"Found {len(events)} events for calendar {calendar_id}")
+        return events

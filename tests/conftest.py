@@ -1,4 +1,5 @@
 """Shared test fixtures for the calendarcli test suite."""
+
 import datetime
 from unittest.mock import Mock
 
@@ -127,7 +128,7 @@ def mock_http_error_429():
     """Mock HttpError for rate limit (429) testing."""
     from googleapiclient.errors import HttpError
     import httplib2
-    
+
     resp = httplib2.Response({"status": "429"})
     content = b'{"error": {"code": 429, "message": "Rate limit exceeded"}}'
     return HttpError(resp, content)
@@ -138,7 +139,7 @@ def mock_http_error_403():
     """Mock HttpError for quota exceeded (403) testing."""
     from googleapiclient.errors import HttpError
     import httplib2
-    
+
     resp = httplib2.Response({"status": "403"})
     content = b'{"error": {"code": 403, "message": "Quota exceeded"}}'
     return HttpError(resp, content)
@@ -149,8 +150,7 @@ def mock_http_error_401():
     """Mock HttpError for authentication failure (401) testing."""
     from googleapiclient.errors import HttpError
     import httplib2
-    
+
     resp = httplib2.Response({"status": "401"})
     content = b'{"error": {"code": 401, "message": "Invalid credentials"}}'
     return HttpError(resp, content)
-

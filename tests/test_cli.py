@@ -1,4 +1,5 @@
 """Consolidated tests for CLI commands, GCalClient, and Scheduler."""
+
 import datetime
 import re
 from unittest.mock import Mock, patch
@@ -10,7 +11,6 @@ from googleapiclient.errors import HttpError
 
 from caltool.cli import cli
 from caltool.gcal_client import GCalClient
-
 
 # --- Utility Functions ---
 
@@ -36,7 +36,7 @@ def clean_cli_output(output):
                 "TOKEN_FILE": str(tmp / "token.json"),
                 "SCOPES": ["https://www.googleapis.com/auth/calendar"],
             },
-            "credentials"
+            "credentials",
         ),
         # Missing token file
         (
@@ -45,7 +45,7 @@ def clean_cli_output(output):
                 "TOKEN_FILE": str(tmp / "missing_token.json"),
                 "SCOPES": ["https://www.googleapis.com/auth/calendar"],
             },
-            "token"
+            "token",
         ),
         # Invalid scopes (not a list)
         (
@@ -54,14 +54,14 @@ def clean_cli_output(output):
                 "TOKEN_FILE": "token.json",
                 "SCOPES": "notalist",
             },
-            "scopes"
+            "scopes",
         ),
     ],
 )
 def test_get_calendars_errors(tmp_path, config_setup, error_type):
     """Test get_calendars command with various error conditions."""
     from caltool.cli import get_calendars
-    
+
     # Create necessary files for some test cases
     if error_type == "token":
         cred_file = tmp_path / "credentials.json"
@@ -71,7 +71,7 @@ def test_get_calendars_errors(tmp_path, config_setup, error_type):
         token_file = tmp_path / "token.json"
         cred_file.write_text("{}")
         token_file.write_text("{}")
-    
+
     config_data = config_setup(tmp_path)
     with pytest.raises(SystemExit):
         get_calendars(config_data)
@@ -80,7 +80,7 @@ def test_get_calendars_errors(tmp_path, config_setup, error_type):
 def test_get_calendars_auth_error(tmp_path):
     """Test get_calendars command with authentication error."""
     from caltool.cli import get_calendars
-    
+
     cred_file = tmp_path / "credentials.json"
     token_file = tmp_path / "token.json"
     cred_file.write_text("{}")
@@ -120,11 +120,12 @@ def test_free_command(mock_parse_date_range, mock_gcal, mock_config, busy_times)
     # Mock parse_date_range to return fixed datetime objects
     import datetime
     from zoneinfo import ZoneInfo
+
     tz = ZoneInfo("America/Los_Angeles")
     start_dt = datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz)
     end_dt = datetime.datetime(2025, 5, 3, 23, 59, 59, tzinfo=tz)
     mock_parse_date_range.return_value = (start_dt, end_dt)
-    
+
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = busy_times
     mock_gcal.return_value = mock_client
@@ -160,9 +161,7 @@ def test_free_command_pretty(mock_config):
     mock_client.get_day_busy_times.return_value = []
     with patch("caltool.cli.GCalClient", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(
-            cli, ["free", "today", "--pretty"], obj=mock_config
-        )
+        result = runner.invoke(cli, ["free", "today", "--pretty"], obj=mock_config)
     assert result.exit_code == 0
     assert "Available Time Slots" in result.output
 
@@ -211,48 +210,51 @@ def test_gcalclient_injection(mock_config):
     assert events[0]["calendarId"] == "primary"
 
 
-@patch("caltool.gcal_client.build", return_value=Mock(name="service"))
-def test_gcalclient_authenticate_token(mock_build, mock_config, monkeypatch):
-    """Test GCalClient authentication with valid token."""
+@patch("caltool.google_client.build", return_value=Mock(name="service"))
+@patch("caltool.google_auth.GoogleAuth.get_credentials")
+def test_gcalclient_authenticate_token(mock_get_creds, mock_build, mock_config):
+    """Test GCalClient authentication with valid token (now handled by GoogleAuth)."""
     creds_mock = Mock()
-    creds_mock.to_json.return_value = "{}"
-    monkeypatch.setattr("os.path.exists", lambda path: True)
-    monkeypatch.setattr("google.oauth2.credentials.Credentials.from_authorized_user_file", lambda f, s: creds_mock)
-    monkeypatch.setattr(creds_mock, "valid", True)
+    mock_get_creds.return_value = creds_mock
     client = GCalClient(mock_config)
     assert client.service is not None
+    mock_get_creds.assert_called_once()
 
 
-@patch("caltool.gcal_client.build", return_value=Mock(name="service"))
-@patch("google.oauth2.credentials.Credentials.from_authorized_user_file")
-def test_gcalclient_authenticate_refresh(mock_from_file, mock_build, mock_config, monkeypatch):
-    """Test GCalClient authentication with expired token requiring refresh."""
+@patch("caltool.google_client.build", return_value=Mock(name="service"))
+@patch("caltool.google_auth.GoogleAuth.get_credentials")
+def test_gcalclient_authenticate_refresh(mock_get_creds, mock_build, mock_config):
+    """Test GCalClient authentication with expired token requiring refresh (handled by GoogleAuth)."""
     creds_mock = Mock()
-    creds_mock.to_json.return_value = "{}"
-    creds_mock.valid = False
-    creds_mock.expired = True
-    creds_mock.refresh_token = True
-    creds_mock.refresh = lambda req: None
-    mock_from_file.return_value = creds_mock
-    monkeypatch.setattr("os.path.exists", lambda path: True)
+    mock_get_creds.return_value = creds_mock
     client = GCalClient(mock_config)
     assert client.service is not None
+    mock_get_creds.assert_called_once()
 
 
 def test_gcalclient_retry(mock_config):
     """Test retry logic for API calls."""
+    import httplib2
+
     service_mock = Mock()
     call_count = {"count": 0}
 
     def fail_then_succeed(*a, **kw):
         call_count["count"] += 1
         if call_count["count"] < 2:
-            raise HttpError(resp=Mock(), content=b"fail")
+            # Raise a transient error (5xx) that will be retried
+            resp = httplib2.Response({"status": 500})
+            resp.status = 500
+            resp.reason = "Internal Server Error"
+            raise HttpError(resp=resp, content=b'{"error": "server error"}')
         return {"items": ["foo"]}
 
     service_mock.calendarList().list().execute.side_effect = fail_then_succeed
     client = GCalClient(mock_config, service=service_mock)
-    assert client.get_calendar_list() == ["foo"]
+    result = client.get_calendar_list()
+    assert result == ["foo"]
+    # Verify retry happened (should be called twice: once fail, once succeed)
+    assert call_count["count"] == 2
 
 
 def test_gcalclient_get_events(mock_config):

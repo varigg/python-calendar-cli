@@ -28,14 +28,14 @@ Extract Google authentication and credential management logic from `GCalClient` 
 
 ## Technical Context
 
-**Language/Version**: Python 3.12+ (from pyproject.toml)  
-**Primary Dependencies**: google-api-python-client (>=2.169.0), google-auth (>=2.39.0), google-auth-oauthlib (>=1.2.2)  
-**Storage**: N/A (credentials stored in ~/.config/caltool/ on disk; no database)  
-**Testing**: pytest (existing test suite in `tests/`)  
-**Target Platform**: Linux/macOS/Windows CLI application  
-**Project Type**: Single Python CLI package with modular architecture  
-**Performance Goals**: Message retrieval <2 seconds; graceful handling of rate limits  
-**Constraints**: Maintain 100% backward compatibility; no breaking API changes to Calendar commands  
+**Language/Version**: Python 3.12+ (from pyproject.toml)
+**Primary Dependencies**: google-api-python-client (>=2.169.0), google-auth (>=2.39.0), google-auth-oauthlib (>=1.2.2)
+**Storage**: N/A (credentials stored in ~/.config/caltool/ on disk; no database)
+**Testing**: pytest (existing test suite in `tests/`)
+**Target Platform**: Linux/macOS/Windows CLI application
+**Project Type**: Single Python CLI package with modular architecture
+**Performance Goals**: Message retrieval <2 seconds; graceful handling of rate limits
+**Constraints**: Maintain 100% backward compatibility; no breaking API changes to Calendar commands
 **Scale/Scope**: Single-user CLI; no multi-user or server requirements; supports multiple Google scopes
 
 ## Constitution Check

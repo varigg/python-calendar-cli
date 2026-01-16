@@ -5,7 +5,7 @@ feature: "001-gmail-client-refactor"
 
 # Tasks: Gmail Client Integration & Google Auth Refactoring
 
-**Input**: Design documents from `specs/001-gmail-client-refactor/`  
+**Input**: Design documents from `specs/001-gmail-client-refactor/`
 **Prerequisites**: [spec.md](spec.md) ✅, [plan.md](plan.md) ✅, [research.md](research.md) ✅
 
 **User Stories**:
@@ -329,5 +329,5 @@ For each user story:
 
 ---
 
-**Tasks Ready for Implementation** ✅  
+**Tasks Ready for Implementation** ✅
 **Start with**: Phase 1 (T001-T003) to establish baseline
