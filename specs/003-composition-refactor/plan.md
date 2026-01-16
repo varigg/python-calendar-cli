@@ -83,6 +83,7 @@ tests/
 ```
 
 **Files Deleted** (YAGNI - internal-only, no external consumers):
+
 - `google_client.py` - Old abstract base class
 - `gcal_client.py` - Old inheritance-based Calendar client
 - `gmail_client.py` - Old inheritance-based Gmail client
