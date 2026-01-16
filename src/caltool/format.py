@@ -2,6 +2,8 @@
 Formatting and color helper functions for calendarcli CLI output.
 """
 
+from collections import defaultdict
+
 import click
 from colorama import Fore, Style
 from tabulate import tabulate
@@ -117,8 +119,6 @@ def print_events_grouped_by_date(events, calendar_colors, calendar_names, timezo
         calendar_names: Dict mapping calendar IDs to calendar names
         timezone: Timezone string for formatting
     """
-    from collections import defaultdict
-
     # Group events by date
     grouped = defaultdict(list)
     for event in events:
