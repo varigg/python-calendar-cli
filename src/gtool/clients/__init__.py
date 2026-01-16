@@ -1,3 +1,9 @@
 """Clients layer - Google API client implementations."""
 
-# Public exports will be defined when modules are migrated
+from gtool.clients.calendar import CalendarClient
+from gtool.clients.gmail import GmailClient
+
+__all__ = [
+    "CalendarClient",
+    "GmailClient",
+]

@@ -59,15 +59,15 @@
 
 **Purpose**: Migrate API clients with class renames
 
-- [ ] T018 [P] [US2] [US3] Copy `gcal_client_v2.py` → `gtool/clients/calendar.py`
+- [x] T018 [P] [US2] [US3] Copy `gcal_client_v2.py` → `gtool/clients/calendar.py`
   - Rename class `GCalClientV2` → `CalendarClient`
   - Update all internal imports to `gtool.*`
-- [ ] T019 [P] [US2] [US3] Copy `gmail_client_v2.py` → `gtool/clients/gmail.py`
+- [x] T019 [P] [US2] [US3] Copy `gmail_client_v2.py` → `gtool/clients/gmail.py`
   - Rename class `GMailClientV2` → `GmailClient`
   - Update all internal imports to `gtool.*`
-- [ ] T020 [US2] Update `gtool/clients/__init__.py` with public exports
+- [x] T020 [US2] Update `gtool/clients/__init__.py` with public exports
 
-**Checkpoint**: Clients layer complete with new class names
+**Checkpoint**: ✅ Clients layer complete with new class names
 
 ---
 
