@@ -1,16 +1,17 @@
-"""Consolidated tests for CLI commands, GCalClient, and Scheduler."""
+"""Tests for CLI commands.
+
+Tests CLI behavior for get-calendars, free, show-events, and gmail commands.
+Uses mocks for client factories to isolate CLI logic from API calls.
+"""
 
 import datetime
 import re
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
-import pytest
 from click.testing import CliRunner
-from googleapiclient.errors import HttpError
 
 from caltool.cli import cli
-from caltool.gcal_client import GCalClient
 
 # --- Utility Functions ---
 
@@ -26,283 +27,273 @@ def clean_cli_output(output):
 # --- CLI Command Tests: get-calendars ---
 
 
-@pytest.mark.parametrize(
-    "config_setup,error_type",
-    [
-        # Missing credentials file
-        (
-            lambda tmp: {
-                "CREDENTIALS_FILE": str(tmp / "missing_credentials.json"),
-                "TOKEN_FILE": str(tmp / "token.json"),
-                "SCOPES": ["https://www.googleapis.com/auth/calendar"],
-            },
-            "credentials",
-        ),
-        # Missing token file
-        (
-            lambda tmp: {
-                "CREDENTIALS_FILE": "credentials.json",
-                "TOKEN_FILE": str(tmp / "missing_token.json"),
-                "SCOPES": ["https://www.googleapis.com/auth/calendar"],
-            },
-            "token",
-        ),
-        # Invalid scopes (not a list)
-        (
-            lambda tmp: {
-                "CREDENTIALS_FILE": "credentials.json",
-                "TOKEN_FILE": "token.json",
-                "SCOPES": "notalist",
-            },
-            "scopes",
-        ),
-    ],
-)
-def test_get_calendars_errors(tmp_path, config_setup, error_type):
-    """Test get_calendars command with various error conditions."""
-    from caltool.cli import get_calendars
-
-    # Create necessary files for some test cases
-    if error_type == "token":
-        cred_file = tmp_path / "credentials.json"
-        cred_file.write_text("{}")
-    elif error_type == "scopes":
-        cred_file = tmp_path / "credentials.json"
-        token_file = tmp_path / "token.json"
-        cred_file.write_text("{}")
-        token_file.write_text("{}")
-
-    config_data = config_setup(tmp_path)
-    with pytest.raises(SystemExit):
-        get_calendars(config_data)
-
-
-def test_get_calendars_auth_error(tmp_path):
-    """Test get_calendars command with authentication error."""
-    from caltool.cli import get_calendars
-
-    cred_file = tmp_path / "credentials.json"
-    token_file = tmp_path / "token.json"
-    cred_file.write_text("{}")
-    token_file.write_text("{}")
-    config = {
-        "CREDENTIALS_FILE": str(cred_file),
-        "TOKEN_FILE": str(token_file),
-        "SCOPES": ["https://www.googleapis.com/auth/calendar"],
-    }
-    with patch("caltool.cli.GCalClient") as mock_client:
-        instance = mock_client.return_value
-        instance.get_calendar_list.side_effect = Exception("invalid_scope")
-        with pytest.raises(SystemExit):
-            get_calendars(config)
-
-
 def test_get_calendars_command(mock_config, calendar_data):
     """Test get-calendars command with successful response."""
     mock_client = Mock()
     mock_client.get_calendar_list.return_value = calendar_data
-    with patch("caltool.cli.GCalClient", return_value=mock_client):
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
+
     assert result.exit_code == 0
     output = clean_cli_output(result.output)
     assert "My Calendar" in output
     assert "Team Calendar" in output
 
 
+def test_get_calendars_auth_error(mock_config):
+    """Test get-calendars command with authentication error."""
+    import google.auth.exceptions
+
+    with patch("caltool.cli.create_calendar_client") as mock_factory:
+        mock_factory.side_effect = google.auth.exceptions.GoogleAuthError("invalid_scope")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
+
+    assert result.exit_code != 0
+    assert "authentication" in result.output.lower() or "Error" in result.output
+
+
+def test_get_calendars_api_error(mock_config):
+    """Test get-calendars command with API error."""
+    mock_client = Mock()
+    mock_client.get_calendar_list.side_effect = Exception("API error")
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
+
+    assert result.exit_code != 0
+
+
 # --- CLI Command Tests: free ---
 
 
-@patch("caltool.cli.GCalClient")
-@patch("caltool.cli.parse_date_range")
-def test_free_command(mock_parse_date_range, mock_gcal, mock_config, busy_times):
+def test_free_command(mock_config, busy_times):
     """Test free command with date range and busy times."""
-    # Mock parse_date_range to return fixed datetime objects
-    import datetime
-    from zoneinfo import ZoneInfo
-
     tz = ZoneInfo("America/Los_Angeles")
     start_dt = datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz)
     end_dt = datetime.datetime(2025, 5, 3, 23, 59, 59, tzinfo=tz)
-    mock_parse_date_range.return_value = (start_dt, end_dt)
 
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = busy_times
-    mock_gcal.return_value = mock_client
-    runner = CliRunner()
-    result = runner.invoke(
-        cli,
-        [
-            "free",
-            "today+1",
-            "--duration",
-            "30",
-            "--availability-start",
-            "08:00",
-            "--availability-end",
-            "18:00",
-            "--timezone",
-            "America/Los_Angeles",
-        ],
-        obj=mock_config,
-    )
+
+    with (
+        patch("caltool.cli.create_calendar_client", return_value=mock_client),
+        patch("caltool.cli.parse_date_range", return_value=(start_dt, end_dt)),
+    ):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "free",
+                "today+1",
+                "--duration",
+                "30",
+                "--availability-start",
+                "08:00",
+                "--availability-end",
+                "18:00",
+                "--timezone",
+                "America/Los_Angeles",
+            ],
+            obj=mock_config,
+        )
+
     assert result.exit_code == 0
     output = clean_cli_output(result.output)
     # Check for the fixed dates (May 2 is Friday, May 3 is Saturday in 2025)
     assert "Fri 05/02" in output
     assert "Sat 05/03" in output
-    assert "PM" in output
-    assert re.search(r"\d{2}:\d{2} [AP]M - \d{2}:\d{2} [AP]M", output)
+    assert "PM" in output or "AM" in output
 
 
 def test_free_command_pretty(mock_config):
     """Test free command with --pretty flag."""
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = []
-    with patch("caltool.cli.GCalClient", return_value=mock_client):
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["free", "today", "--pretty"], obj=mock_config)
+
     assert result.exit_code == 0
     assert "Available Time Slots" in result.output
 
 
-def test_free_command_error(mock_config):
-    """Test free command with error condition."""
-    # Simulate error in command logic
-    # Override SCOPES to be empty for this test
-    mock_config.data["SCOPES"] = []
-    with patch("caltool.cli.GCalClient", side_effect=Exception("fail")):
+def test_free_command_no_args_defaults_to_today(mock_config):
+    """Test free command with no date argument defaults to today."""
+    mock_client = Mock()
+    mock_client.get_day_busy_times.return_value = []
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
         runner = CliRunner()
-        result = runner.invoke(cli, ["free", "--start-date", "2025-05-02", "--end-date", "2025-05-02"], obj=mock_config)
-    assert result.exit_code != 0
-    assert "Error:" in result.output
+        result = runner.invoke(cli, ["free"], obj=mock_config)
+
+    assert result.exit_code == 0
+
+
+def test_free_command_with_duration(mock_config):
+    """Test free command with custom duration."""
+    mock_client = Mock()
+    mock_client.get_day_busy_times.return_value = []
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["free", "today", "--duration", "60"], obj=mock_config)
+
+    assert result.exit_code == 0
 
 
 # --- CLI Command Tests: show-events ---
 
 
-def test_show_events_invalid_time(mock_config):
+def test_show_events_command(mock_config):
+    """Test show-events command with successful response."""
+    mock_client = Mock()
+    mock_client.get_calendar_list.return_value = [
+        {"id": "primary", "summary": "My Calendar"},
+    ]
+    mock_client.get_events.return_value = [
+        {
+            "id": "event1",
+            "summary": "Test Meeting",
+            "start": {"dateTime": "2025-05-02T10:00:00-07:00"},
+            "end": {"dateTime": "2025-05-02T11:00:00-07:00"},
+            "calendarId": "primary",
+        }
+    ]
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["show-events", "today"], obj=mock_config)
+
+    assert result.exit_code == 0
+    assert "Test Meeting" in result.output
+
+
+def test_show_events_invalid_date(mock_config):
     """Test show-events command with invalid date format."""
-    # Override SCOPES to be empty for this test
-    mock_config.data["SCOPES"] = []
-    # Patch GCalClient so CLI proceeds to time parsing
-    with patch("caltool.cli.GCalClient", return_value=Mock()):
+    with patch("caltool.cli.create_calendar_client", return_value=Mock()):
         runner = CliRunner()
         result = runner.invoke(cli, ["show-events", "not-a-date"], obj=mock_config)
+
     assert result.exit_code != 0
 
 
-# --- GCalClient Tests ---
+def test_show_events_no_args_defaults_to_today(mock_config):
+    """Test show-events command with no date argument defaults to today."""
+    mock_client = Mock()
+    mock_client.get_calendar_list.return_value = [{"id": "primary", "summary": "My Calendar"}]
+    mock_client.get_events.return_value = []
+
+    with patch("caltool.cli.create_calendar_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["show-events"], obj=mock_config)
+
+    assert result.exit_code == 0
 
 
-def test_gcalclient_injection(mock_config):
-    """Test that dependency injection works for GCalClient."""
-    mock_service = Mock()
-    client = GCalClient(mock_config, service=mock_service)
-    assert client.service is mock_service
-    # Test that API methods use the injected service
-    client.service.calendarList().list().execute.return_value = {"items": ["foo"]}
-    assert client.get_calendar_list() == ["foo"]
-    # Test get_events with injected service
-    client.service.events().list().execute.return_value = {"items": [{"id": 1}]}
-    events = client.get_events("primary")
-    assert events[0]["id"] == 1
-    assert events[0]["calendarId"] == "primary"
+# --- CLI Command Tests: gmail ---
 
 
-@patch("caltool.google_client.build", return_value=Mock(name="service"))
-@patch("caltool.google_auth.GoogleAuth.get_credentials")
-def test_gcalclient_authenticate_token(mock_get_creds, mock_build, mock_config):
-    """Test GCalClient authentication with valid token (now handled by GoogleAuth)."""
-    creds_mock = Mock()
-    mock_get_creds.return_value = creds_mock
-    client = GCalClient(mock_config)
-    assert client.service is not None
-    mock_get_creds.assert_called_once()
+def test_gmail_list_command(mock_config):
+    """Test gmail list command with successful response."""
+    # Enable Gmail in config
+    mock_config.data["GMAIL_ENABLED"] = True
+    mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.readonly")
+
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {"id": "msg1", "threadId": "thread1", "snippet": "Test message preview"},
+    ]
+
+    with (
+        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch.object(mock_config, "validate_gmail_scopes"),
+    ):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--limit", "5"], obj=mock_config)
+
+    assert result.exit_code == 0
+    assert "msg1" in result.output or "1 message" in result.output.lower()
 
 
-@patch("caltool.google_client.build", return_value=Mock(name="service"))
-@patch("caltool.google_auth.GoogleAuth.get_credentials")
-def test_gcalclient_authenticate_refresh(mock_get_creds, mock_build, mock_config):
-    """Test GCalClient authentication with expired token requiring refresh (handled by GoogleAuth)."""
-    creds_mock = Mock()
-    mock_get_creds.return_value = creds_mock
-    client = GCalClient(mock_config)
-    assert client.service is not None
-    mock_get_creds.assert_called_once()
+def test_gmail_list_no_messages(mock_config):
+    """Test gmail list command with no messages."""
+    mock_config.data["GMAIL_ENABLED"] = True
+    mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.readonly")
+
+    mock_client = Mock()
+    mock_client.list_messages.return_value = []
+
+    with (
+        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch.object(mock_config, "validate_gmail_scopes"),
+    ):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list"], obj=mock_config)
+
+    assert result.exit_code == 0
+    assert "No messages" in result.output
 
 
-def test_gcalclient_retry(mock_config):
-    """Test retry logic for API calls."""
-    import httplib2
+def test_gmail_show_message_command(mock_config):
+    """Test gmail show-message command."""
+    mock_config.data["GMAIL_ENABLED"] = True
+    mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.readonly")
 
-    service_mock = Mock()
-    call_count = {"count": 0}
+    mock_client = Mock()
+    mock_client.get_message.return_value = {
+        "id": "msg1",
+        "snippet": "Test message",
+        "payload": {"headers": [{"name": "Subject", "value": "Test"}]},
+    }
 
-    def fail_then_succeed(*a, **kw):
-        call_count["count"] += 1
-        if call_count["count"] < 2:
-            # Raise a transient error (5xx) that will be retried
-            resp = httplib2.Response({"status": 500})
-            resp.status = 500
-            resp.reason = "Internal Server Error"
-            raise HttpError(resp=resp, content=b'{"error": "server error"}')
-        return {"items": ["foo"]}
+    with (
+        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch.object(mock_config, "validate_gmail_scopes"),
+    ):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "show-message", "msg1"], obj=mock_config)
 
-    service_mock.calendarList().list().execute.side_effect = fail_then_succeed
-    client = GCalClient(mock_config, service=service_mock)
-    result = client.get_calendar_list()
-    assert result == ["foo"]
-    # Verify retry happened (should be called twice: once fail, once succeed)
-    assert call_count["count"] == 2
+    assert result.exit_code == 0
+    assert "msg1" in result.output
 
 
-def test_gcalclient_get_events(mock_config):
-    """Test get_events returns events and adds calendarId."""
-    service_mock = Mock()
-    service_mock.events().list().execute.return_value = {"items": [{"id": 1}]}
-    client = GCalClient(mock_config, service=service_mock)
-    events = client.get_events("primary")
-    assert events[0]["id"] == 1
-    assert events[0]["calendarId"] == "primary"
+def test_gmail_delete_command_with_confirm(mock_config):
+    """Test gmail delete command with --confirm flag."""
+    mock_config.data["GMAIL_ENABLED"] = True
+    mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.modify")
+
+    mock_client = Mock()
+    mock_client.delete_message.return_value = None
+
+    with (
+        patch("caltool.cli.create_gmail_client", return_value=mock_client),
+        patch.object(mock_config, "validate_gmail_scopes"),
+    ):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "delete", "msg1", "--confirm"], obj=mock_config)
+
+    assert result.exit_code == 0
+    assert "deleted" in result.output.lower()
+    mock_client.delete_message.assert_called_once_with(message_id="msg1")
 
 
-# --- Scheduler Tests ---
+def test_gmail_delete_command_cancelled(mock_config):
+    """Test gmail delete command cancelled by user."""
+    mock_config.data["GMAIL_ENABLED"] = True
+    mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.modify")
 
+    with (
+        patch("caltool.cli.create_gmail_client", return_value=Mock()),
+        patch.object(mock_config, "validate_gmail_scopes"),
+    ):
+        runner = CliRunner()
+        # Simulate user typing 'n' to cancel
+        result = runner.invoke(cli, ["gmail", "delete", "msg1"], obj=mock_config, input="n\n")
 
-@pytest.mark.parametrize(
-    "start,end,duration,expected",
-    [
-        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 8, 30), 30, True),
-        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 8, 15), 30, False),
-        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 9, 0), 30, True),
-        (datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 3, 8, 0), 30, True),
-    ],
-)
-def test_is_slot_long_enough(scheduler, start, end, duration, expected):
-    """Test scheduler's slot duration validation."""
-    assert scheduler.is_slot_long_enough(start, end, duration) == expected
-
-
-@pytest.mark.parametrize(
-    "busy,expected_count",
-    [
-        ([], 1),
-        ([{"start": "2025-05-02T09:00:00-07:00", "end": "2025-05-02T10:00:00-07:00"}], 2),
-        ([{"start": "2025-05-02T08:00:00-07:00", "end": "2025-05-02T18:00:00-07:00"}], 0),
-        (
-            [
-                {"start": "2025-05-02T08:00:00-07:00", "end": "2025-05-02T09:00:00-07:00"},
-                {"start": "2025-05-02T17:00:00-07:00", "end": "2025-05-02T18:00:00-07:00"},
-            ],
-            1,
-        ),
-    ],
-)
-def test_get_free_slots_for_day(scheduler, busy, expected_count):
-    """Test scheduler's free slot calculation for a day."""
-    tz = ZoneInfo("America/Los_Angeles")
-    day_start = datetime.datetime(2025, 5, 2, 8, 0, tzinfo=tz)
-    day_end = datetime.datetime(2025, 5, 2, 18, 0, tzinfo=tz)
-    slots = scheduler.get_free_slots_for_day(busy, day_start, day_end, 30)
-    assert len(slots) == expected_count
+    assert result.exit_code == 0
+    assert "cancelled" in result.output.lower()

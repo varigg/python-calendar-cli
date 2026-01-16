@@ -72,16 +72,6 @@ def parse_date_range(range_str: str, tz: Optional[str] = None) -> tuple[datetime
     return start_datetime, end_datetime
 
 
-def parse_datetime_option(value: str, default: Optional[datetime.datetime] = None) -> datetime.datetime:
-    """Parse an ISO datetime string or return default/current time."""
-    if not value:
-        return default or datetime.datetime.now()
-    try:
-        return datetime.datetime.fromisoformat(value)
-    except Exception:
-        raise ValueError(f"Invalid datetime format: {value}")
-
-
 def parse_time_option(value: str, default: Optional[datetime.time] = None) -> datetime.time:
     """Parse a time string (HH:MM) or return default."""
     if not value:
@@ -90,34 +80,6 @@ def parse_time_option(value: str, default: Optional[datetime.time] = None) -> da
         return datetime.time.fromisoformat(value)
     except Exception:
         raise ValueError(f"Invalid time format: {value}")
-
-
-def to_zulutime(dt: datetime.datetime) -> str:
-    """
-    Convert a datetime object to Zulu time format (UTC with Z suffix).
-
-    Google Calendar API requires timestamps in RFC3339 format with the 'Z' suffix
-    for UTC times, rather than the '+00:00' offset notation. While both are valid
-    RFC3339, the API specifically expects Zulu time notation.
-
-    Args:
-        dt: A datetime object (naive or timezone-aware)
-
-    Returns:
-        ISO 8601 string in Zulu time format (e.g., "2025-05-02T17:00:00Z")
-    """
-    if dt.tzinfo is None:
-        # Assume local time if naive, but ideally should be aware
-        dt = dt.astimezone()
-
-    # Convert to UTC
-    dt_utc = dt.astimezone(datetime.timezone.utc)
-    return dt_utc.isoformat().replace("+00:00", "Z")
-
-
-def _parse_event_dt(dt_str: str) -> datetime.datetime:
-    """Helper to parse event datetime string, handling Z suffix."""
-    return datetime.datetime.fromisoformat(dt_str)
 
 
 def get_event_date(event: dict) -> str:
@@ -141,8 +103,8 @@ def format_event_time(event: dict, timezone: str) -> str:
         return f"{start_date} (All Day)"
 
     try:
-        start_dt = _parse_event_dt(start_str)
-        end_dt = _parse_event_dt(end_str)
+        start_dt = datetime.datetime.fromisoformat(start_str)
+        end_dt = datetime.datetime.fromisoformat(end_str)
 
         # Convert to user's timezone if possible
         try:
