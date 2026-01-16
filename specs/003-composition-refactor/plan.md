@@ -35,7 +35,7 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 ✅ **Separation of Concerns**: Composition pattern directly addresses SoC violation in GoogleAPIClient inheritance. ErrorCategorizer, RetryPolicy, and ServiceFactory separate error handling, retry logic, and service building from client logic.
 
-✅ **Test-First Development**: Feature spec includes 18 acceptance scenarios (6 per P1 user story). Implementation will use TDD—tests written before code. All new components testable without @patch decorators.
+✅ **Test-First Development**: Feature spec includes 18 acceptance scenarios (6 per P1 user story). Implementation will use TDD—tests written before code. All new components testable without @patch decorators. Test style: module-level imports, no test classes unless necessary, dependency injection over monkeypatch, focus on high-value code paths.
 
 ✅ **Type Safety & Documentation**: Python 3.12.11 with type hints. All three new components will have full docstrings and type annotations. Composed clients will maintain type safety of original clients.
 

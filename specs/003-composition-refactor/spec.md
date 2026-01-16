@@ -75,13 +75,15 @@ As a CLI user, I want the application to continue working exactly as before.
 
 **FR-008**: System MUST maintain backward compatibility - CLI commands, arguments, and output unchanged; internal test structure may change
 
+**FR-009**: All tests MUST use module-level imports; MUST NOT use test classes unless necessary; MUST use dependency injection over monkeypatch; MUST focus on high-value code paths (no testing constants or Python behavior)
+
 ## Success Criteria
 
 **SC-001**: ErrorCategorizer correctly categorizes 100% of error types in under 1ms per call
 
 **SC-002**: RetryPolicy successfully retries QUOTA/TRANSIENT errors up to max_retries
 
-**SC-003**: New test suites require zero @patch decorators and achieve 95%+ coverage
+**SC-003**: New test suites require zero @patch decorators and focus on high-value code paths (no testing constants or Python built-in behavior)
 
 **SC-004**: Composed clients testable in under 10 lines of test code per method
 

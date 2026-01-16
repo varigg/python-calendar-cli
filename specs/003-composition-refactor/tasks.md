@@ -3,7 +3,7 @@
 **Feature**: `003-composition-refactor`
 **Branch**: `003-composition-refactor`
 **Plan**: [plan.md](plan.md) | **Spec**: [spec.md](spec.md)
-**Total Tasks**: 49 | **Phases**: 6 | **Test-First**: Yes
+**Total Tasks**: 44 | **Phases**: 6 | **Test-First**: Yes
 
 ## Phase 1: Setup (Infrastructure & Testing Foundation)
 
@@ -19,7 +19,7 @@ Independent Test: All tests pass; project structure ready for feature implementa
 ## Phase 2: Foundational - User Story 1 (P1) - Extract Reusable Components
 
 Goal: Extract three standalone, reusable components from GoogleAPIClient for independent testing and use.
-Independent Test: Each component tested directly; zero @patch decorators; >95% coverage per component.
+Independent Test: Each component tested directly; zero @patch decorators; focus on high-value code paths.
 Tests: FR-001, FR-002, FR-003, SC-001, SC-002
 
 **Components to Extract**:
@@ -40,7 +40,6 @@ Tests: FR-001, FR-002, FR-003, SC-001, SC-002
   - `categorize(error: HttpError) -> str` method
   - Handle all error types: AUTH, QUOTA, TRANSIENT, CLIENT
   - Type hints and docstrings
-- [ ] T008 Verify ErrorCategorizer 95%+ coverage in test suite
 
 ### Component 2: RetryPolicy
 
@@ -57,7 +56,6 @@ Tests: FR-001, FR-002, FR-003, SC-001, SC-002
   - `execute(func: Callable, *args, **kwargs) -> Any` method with retry loop
   - Exponential backoff: delay \* (2 \*\* attempt)
   - Type hints and docstrings
-- [ ] T011 Verify RetryPolicy 95%+ coverage in test suite
 
 ### Component 3: ServiceFactory
 
@@ -72,19 +70,17 @@ Tests: FR-001, FR-002, FR-003, SC-001, SC-002
   - `build_service(api_name: str, api_version: str) -> Any` method
   - Uses `googleapiclient.discovery.build()`
   - Type hints and docstrings
-- [ ] T014 Verify ServiceFactory 95%+ coverage in test suite
 
 ### Validation Tasks
 
 - [ ] T015 Run all tests for Phase 2 components: pytest tests/test_error_categorizer.py tests/test_retry_policy.py tests/test_service_factory.py
 - [ ] T016 Verify zero @patch decorators in Phase 2 tests
-- [ ] T017 Verify all three components have >95% coverage
-- [ ] T018 Verify all 88 existing tests still pass (baseline unchanged)
+- [ ] T017 Run full test suite: pytest tests/ (some old tests may fail during migration - expected)
 
 ## Phase 3: User Story 2 (P2) - Create Composition-Based Calendar Client
 
 Goal: Refactor GCalClient using composition pattern; validate pattern with Calendar API client.
-Independent Test: GCalClientV2 fully testable with constructor injection; zero @patch decorators; >95% coverage.
+Independent Test: GCalClientV2 fully testable with constructor injection; zero @patch decorators.
 Tests: FR-004, SC-003, SC-004
 
 ### GCalClientV2 Implementation
@@ -119,12 +115,11 @@ Tests: FR-004, SC-003, SC-004
 
 - [ ] T022 [US2] Run test suite for GCalClientV2: pytest tests/test_gcal_client_v2.py
 - [ ] T023 [US2] Verify zero @patch decorators in GCalClientV2 tests
-- [ ] T024 [US2] Verify GCalClientV2 95%+ coverage
 
 ## Phase 4: User Story 3 (P3) - Create Composition-Based Gmail Client
 
 Goal: Apply composition pattern to Gmail client; demonstrate pattern scalability.
-Independent Test: GMailClientV2 fully testable with constructor injection; zero @patch decorators; >95% coverage.
+Independent Test: GMailClientV2 fully testable with constructor injection; zero @patch decorators.
 Tests: FR-005, SC-003, SC-004
 
 ### GMailClientV2 Implementation
@@ -160,7 +155,6 @@ Tests: FR-005, SC-003, SC-004
 
 - [ ] T028 [US3] Run test suite for GMailClientV2: pytest tests/test_gmail_client_v2.py
 - [ ] T029 [US3] Verify zero @patch decorators in GMailClientV2 tests
-- [ ] T030 [US3] Verify GMailClientV2 95%+ coverage
 
 ## Phase 5: User Story 4 (P4) - Update CLI to Use Composed Clients
 
@@ -280,7 +274,7 @@ Goal: Clean up, deprecate old clients, finalize documentation, ensure code quali
 
 - [ ] T049 Final verification: Run full test suite
   - Run: pytest tests/
-  - Verify all component tests passing (>95% coverage each)
+  - Verify all component tests passing
   - Verify all CLI behavior tests passing
   - Verify feature 003 complete and ready for review
 
