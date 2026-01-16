@@ -2,7 +2,7 @@
 
 **Feature**: `004-gtool-restructure`
 **Plan**: [plan.md](plan.md) | **Spec**: [spec.md](spec.md)
-**Total Tasks**: 42 | **Phases**: 8
+**Total Tasks**: 49 | **Phases**: 8
 
 ## Format: `[ID] [P?] [Story?] Description`
 
@@ -28,30 +28,30 @@
 
 ---
 
-## Phase 2: Infrastructure Layer (US2 - Layered Structure)
+## Phase 2: Config & Utils Layers (US2)
 
-**Purpose**: Migrate infrastructure components (no internal dependencies)
+**Purpose**: Migrate configuration and utility modules (required before Infrastructure)
 
-- [ ] T009 [P] [US2] Copy `error_categorizer.py` → `gtool/infrastructure/error_categorizer.py`, update imports
-- [ ] T010 [P] [US2] Copy `retry_policy.py` → `gtool/infrastructure/retry.py`, update imports
-- [ ] T011 [P] [US2] Copy `service_factory.py` → `gtool/infrastructure/service_factory.py`, update imports
-- [ ] T012 [US2] Copy `google_auth.py` → `gtool/infrastructure/auth.py`, update imports (depends on config)
-- [ ] T013 [US2] Update `gtool/infrastructure/__init__.py` with public exports
+- [ ] T009 [P] [US2] Copy `config.py` → `gtool/config/settings.py`, update imports
+- [ ] T010 [P] [US2] Copy `datetime_utils.py` → `gtool/utils/datetime.py`, update imports
+- [ ] T011 [US2] Update `gtool/config/__init__.py` with public exports
+- [ ] T012 [US2] Update `gtool/utils/__init__.py` with public exports
 
-**Checkpoint**: Infrastructure layer complete, can be imported as `gtool.infrastructure`
+**Checkpoint**: Config and utils layers complete (required for Infrastructure phase)
 
 ---
 
-## Phase 3: Config & Utils Layers (US2)
+## Phase 3: Infrastructure Layer (US2 - Layered Structure)
 
-**Purpose**: Migrate configuration and utility modules
+**Purpose**: Migrate infrastructure components (depends on Config being available)
 
-- [ ] T014 [P] [US2] Copy `config.py` → `gtool/config/settings.py`, update imports
-- [ ] T015 [P] [US2] Copy `datetime_utils.py` → `gtool/utils/datetime.py`, update imports
-- [ ] T016 [US2] Update `gtool/config/__init__.py` with public exports
-- [ ] T017 [US2] Update `gtool/utils/__init__.py` with public exports
+- [ ] T013 [P] [US2] Copy `error_categorizer.py` → `gtool/infrastructure/error_categorizer.py`, update imports
+- [ ] T014 [P] [US2] Copy `retry_policy.py` → `gtool/infrastructure/retry.py`, update imports
+- [ ] T015 [P] [US2] Copy `service_factory.py` → `gtool/infrastructure/service_factory.py`, update imports
+- [ ] T016 [US2] Copy `google_auth.py` → `gtool/infrastructure/auth.py`, update imports (now Config is available)
+- [ ] T017 [US2] Update `gtool/infrastructure/__init__.py` with public exports
 
-**Checkpoint**: Config and utils layers complete
+**Checkpoint**: Infrastructure layer complete, can be imported as `gtool.infrastructure`
 
 ---
 
@@ -153,7 +153,7 @@
 ### Critical Path
 
 ```
-Phase 1 (Setup) → Phase 2 (Infrastructure) → Phase 3 (Config/Utils) → Phase 4 (Clients) → Phase 5 (Core) → Phase 6 (CLI) → Phase 7 (Package) → Phase 8 (Tests)
+Phase 1 (Setup) → Phase 2 (Config/Utils) → Phase 3 (Infrastructure) → Phase 4 (Clients) → Phase 5 (Core) → Phase 6 (CLI) → Phase 7 (Package) → Phase 8 (Tests)
 ```
 
 ### Parallelizable Tasks
@@ -161,8 +161,8 @@ Phase 1 (Setup) → Phase 2 (Infrastructure) → Phase 3 (Config/Utils) → Phas
 | Phase | Parallel Tasks |
 |-------|----------------|
 | 1 | T002-T008 (all __init__.py files) |
-| 2 | T009-T011 (infrastructure modules) |
-| 3 | T014-T015 (config and utils) |
+| 2 | T009-T010 (config and datetime utils) |
+| 3 | T013-T015 (error categorizer, retry, service factory) |
 | 4 | T018-T019 (both clients) |
 | 5 | T021 can start immediately |
 | 6 | T024-T025 (errors and formatters) |

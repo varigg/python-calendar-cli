@@ -9,7 +9,7 @@ Rename `caltool` to `gtool` and restructure the codebase into a layered director
 
 **Technical Approach**:
 1. Create new `src/gtool/` directory structure with layer packages
-2. Move files to appropriate layers, updating imports progressively
+2. Move files to appropriate layers, updating imports progressively (8-phase plan)
 3. Rename classes and simplify file names
 4. Update `pyproject.toml` entry points and package configuration
 5. Update all test imports

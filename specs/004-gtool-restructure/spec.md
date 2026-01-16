@@ -2,7 +2,8 @@
 
 **Feature Branch**: `004-gtool-restructure`
 **Created**: January 16, 2026
-**Status**: Draft
+**Status**: Ready for Implementation
+**Backward Compatibility**: Clean break (no `caltool` alias; user aware via package distribution)
 **Input**: User description: "Restructure caltool to gtool with layered directory architecture. Rename the tool since it now does more than just calendar access."
 
 ## User Scenarios & Testing
@@ -59,9 +60,9 @@ As a developer, I want classes named without legacy suffixes (e.g., `CalendarCli
 
 ### Edge Cases
 
-- What happens if user has `caltool` in scripts? Provide migration guidance or alias.
-- What happens to existing config files in `~/.config/caltool/`? Should continue to work (config path unchanged initially).
-- How do we handle `pyproject.toml` entry point changes? Must update `[project.scripts]`.
+- Config files in `~/.config/caltool/` continue to work (config path unchanged)
+- Users with `caltool` in scripts will need to update to `gtool` (intentional clean break)
+- Package identity changes; distribution will be under `gtool` package on PyPI
 
 ## Requirements
 
@@ -79,13 +80,14 @@ As a developer, I want classes named without legacy suffixes (e.g., `CalendarCli
 
 **Backward Compatibility**:
 - **FR-007**: All existing CLI commands MUST work unchanged (`free`, `show-events`, `get-calendars`, `gmail list`, `gmail show-message`, `gmail delete`, `config`)
-- **FR-008**: Config file location (`~/.config/caltool/`) MAY remain unchanged for this release
+- **FR-008**: Config file location (`~/.config/caltool/`) remains unchanged (users with existing configs unaffected)
 - **FR-009**: All 95+ existing tests MUST pass after migration
+- **FR-010**: `caltool` command is NOT provided (clean break). Users with existing scripts will see "command not found". New package distributed as `gtool` only; user awareness is built-in to installation mechanism (`uv tool install gtool`)
 
 **Class Naming**:
-- **FR-010**: `GCalClientV2` MUST be renamed to `CalendarClient`
-- **FR-011**: `GMailClientV2` MUST be renamed to `GmailClient`
-- **FR-012**: File names MUST be simplified (e.g., `calendar.py` not `gcal_client_v2.py`)
+- **FR-011**: `GCalClientV2` MUST be renamed to `CalendarClient`
+- **FR-012**: `GMailClientV2` MUST be renamed to `GmailClient`
+- **FR-013**: File names MUST be simplified (e.g., `calendar.py` not `gcal_client_v2.py`)
 
 ### Key Entities
 
