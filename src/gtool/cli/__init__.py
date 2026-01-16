@@ -1,3 +1,7 @@
 """CLI layer - command-line interface and presentation logic."""
 
-# Public exports will be defined when modules are migrated
+from gtool.cli.main import cli
+
+__all__ = [
+    "cli",
+]

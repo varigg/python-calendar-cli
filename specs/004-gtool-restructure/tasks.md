@@ -89,14 +89,14 @@
 
 **Purpose**: Migrate CLI module, this is the entry point
 
-- [ ] T024 [P] [US2] Copy `errors.py` → `gtool/cli/errors.py`, update imports
-- [ ] T025 [P] [US2] Copy `format.py` → `gtool/cli/formatters.py`, update imports
-- [ ] T026 [US1] [US2] Copy `cli.py` → `gtool/cli/main.py`
+- [x] T024 [P] [US2] Copy `errors.py` → `gtool/cli/errors.py`, update imports
+- [x] T025 [P] [US2] Copy `format.py` → `gtool/cli/formatters.py`, update imports
+- [x] T026 [US1] [US2] Copy `cli.py` → `gtool/cli/main.py`
   - Update all internal imports to use `gtool.*` layer packages
   - Update factory functions to use new client class names
-- [ ] T027 [US2] Update `gtool/cli/__init__.py` with public exports (cli group)
+- [x] T027 [US2] Update `gtool/cli/__init__.py` with public exports (cli group)
 
-**Checkpoint**: CLI layer complete, all source files migrated
+**Checkpoint**: ✅ CLI layer complete, all source files migrated
 
 ---
 
