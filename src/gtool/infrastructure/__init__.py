@@ -1,9 +1,7 @@
 """Infrastructure layer - error handling, retry logic, authentication."""
 
-from gtool.infrastructure.auth import GoogleAuth
-from gtool.infrastructure.error_categorizer import ErrorCategorizer
-from gtool.infrastructure.retry import RetryPolicy
-from gtool.infrastructure.service_factory import ServiceFactory
+# Lazy imports to avoid circular dependencies
+# Import these directly from their modules when needed
 
 __all__ = [
     "ErrorCategorizer",

@@ -1,13 +1,18 @@
-"""RetryPolicy component for composition-based architecture.
+"""RetryPolicy for handling transient failures with exponential backoff.
 
 Manages retry logic with smart categorization using ErrorCategorizer.
 Separates retry policy from API client implementation.
 """
 
+import logging
 import time
 from typing import Any, Callable, Optional
 
+import google.auth.exceptions
+
 from gtool.infrastructure.error_categorizer import ErrorCategorizer
+
+logger = logging.getLogger(__name__)
 
 
 class RetryPolicy:
@@ -68,6 +73,7 @@ class RetryPolicy:
             Result of func execution
 
         Raises:
+            AuthenticationError: If Google auth error occurs
             Exception: Original exception if retries exhausted or error not retryable
         """
         attempt = 0
@@ -75,6 +81,13 @@ class RetryPolicy:
         while attempt <= self.max_retries:
             try:
                 return func(*args, **kwargs)
+            except google.auth.exceptions.GoogleAuthError as exc:
+                # Wrap Google auth exceptions as AuthenticationError to keep CLI layer
+                # independent of Google auth implementation details (dependency inversion)
+                from gtool.cli.errors import AuthenticationError
+
+                logger.debug(f"Google auth error caught and wrapped: {exc}")
+                raise AuthenticationError(f"Authentication failed: {exc}") from exc
             except Exception as exc:
                 attempt += 1
 

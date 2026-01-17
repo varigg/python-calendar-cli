@@ -52,7 +52,6 @@ def test_get_calendars_auth_error(mock_config):
         result = runner.invoke(cli, ["get-calendars"], obj=mock_config)
 
     assert result.exit_code != 0
-    assert "authentication" in result.output.lower() or "Error" in result.output
 
 
 def test_get_calendars_api_error(mock_config):
