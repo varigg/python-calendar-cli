@@ -61,3 +61,21 @@ class ConfigError(Exception):
     """
 
     pass
+
+
+class ConfigValidationError(ConfigError):
+    """Configuration validation error.
+
+    Raised when:
+    - Required config keys are missing
+    - Config values have incorrect types (e.g., SCOPES is not a list)
+    - Config values fail validation rules
+    - Gmail is enabled but scopes are not configured
+
+    This exception should NEVER be raised from CLI layer.
+    CLI layer MUST catch this and translate to click.UsageError.
+    """
+
+    pass
+
+    pass

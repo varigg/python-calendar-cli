@@ -2,8 +2,9 @@ import json
 import logging
 import os
 
-import click
 from platformdirs import user_config_dir
+
+from gtool.infrastructure.exceptions import ConfigValidationError
 
 logger = logging.getLogger("gtool")
 
@@ -49,14 +50,16 @@ class Config:
         missing = [k for k in required_keys if not self.get(k)]
         if missing:
             logger.error(f"Missing required config keys: {missing}")
-            raise click.UsageError(f"Missing required config keys: {', '.join(missing)}. Run 'gtool config' to set up.")
+            raise ConfigValidationError(
+                f"Missing required config keys: {', '.join(missing)}. Run 'gtool config' to set up."
+            )
         # Basic format validation
         if not isinstance(self.get("SCOPES"), list):
             logger.error(f"SCOPES must be a list, got {type(self.get('SCOPES'))}")
-            raise click.UsageError("SCOPES must be a list.")
+            raise ConfigValidationError("SCOPES must be a list.")
         if not isinstance(self.get("CALENDAR_IDS"), list):
             logger.error(f"CALENDAR_IDS must be a list, got {type(self.get('CALENDAR_IDS'))}")
-            raise click.UsageError("CALENDAR_IDS must be a list.")
+            raise ConfigValidationError("CALENDAR_IDS must be a list.")
 
     def __init__(self, path=CONFIG_PATH):
         self.path = path
@@ -78,86 +81,6 @@ class Config:
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         with open(self.path, "w") as f:
             json.dump(self.data, f, indent=4)
-
-    def prompt(self):
-        click.echo(click.style("Creating a new configuration file...", fg="cyan"))
-        self.data["CREDENTIALS_FILE"] = click.prompt(
-            "Enter the path to your credentials file",
-            default=self.data.get("CREDENTIALS_FILE", DEFAULTS["CREDENTIALS_FILE"]),
-        )
-        self.data["TOKEN_FILE"] = click.prompt(
-            "Enter the path to your token file", default=self.data.get("TOKEN_FILE", DEFAULTS["TOKEN_FILE"])
-        )
-        self.data["TIME_ZONE"] = click.prompt(
-            "Enter your time zone", default=self.data.get("TIME_ZONE", DEFAULTS["TIME_ZONE"])
-        )
-        self.data["AVAILABILITY_START"] = click.prompt(
-            "Enter your availability start time (HH:MM)",
-            default=self.data.get("AVAILABILITY_START", DEFAULTS["AVAILABILITY_START"]),
-        )
-        self.data["AVAILABILITY_END"] = click.prompt(
-            "Enter your availability end time (HH:MM)",
-            default=self.data.get("AVAILABILITY_END", DEFAULTS["AVAILABILITY_END"]),
-        )
-        cal_ids = click.prompt(
-            "Enter the comma-separated calendar IDs"
-            "\n(You can update this later. The get-calendars command"
-            " will show your current calendars.)",
-            default=",".join(self.data.get("CALENDAR_IDS", DEFAULTS["CALENDAR_IDS"])),
-        )
-        self.data["CALENDAR_IDS"] = [cid.strip() for cid in cal_ids.split(",")]
-
-        # Scope selection with menu
-        self._prompt_for_scopes()
-
-        self.save()
-        click.echo(click.style(f"Configuration file created at {self.path}", fg="green"))
-
-    def _prompt_for_scopes(self):
-        """Interactively prompt user to select scopes with menu-based interface."""
-        click.echo(click.style("\nSelect which features to enable:", fg="cyan"))
-
-        # Determine which scopes are already selected
-        current_scopes = set(self.data.get("SCOPES", DEFAULTS["SCOPES"]))
-
-        # Calendar scope (always included)
-        has_calendar = AVAILABLE_SCOPES["calendar"] in current_scopes
-        if not has_calendar:
-            self.data["SCOPES"] = self.data.get("SCOPES", [])
-            if AVAILABLE_SCOPES["calendar"] not in self.data["SCOPES"]:
-                self.data["SCOPES"].append(AVAILABLE_SCOPES["calendar"])
-
-        # Gmail scope selection
-        gmail_enabled = click.confirm(
-            "Do you want to enable Gmail access? (Read-only)", default=self.data.get("GMAIL_ENABLED", False)
-        )
-        self.data["GMAIL_ENABLED"] = gmail_enabled
-
-        if gmail_enabled:
-            # Ask about write permissions
-            gmail_modify = click.confirm(
-                "Do you need write permissions (send, delete, modify)? (Read-only is recommended)", default=False
-            )
-
-            scopes = self.data.get("SCOPES", DEFAULTS["SCOPES"].copy())
-            if gmail_modify:
-                scope = AVAILABLE_SCOPES["gmail.modify"]
-            else:
-                scope = AVAILABLE_SCOPES["gmail.readonly"]
-
-            # Remove old Gmail scopes if present
-            scopes = [s for s in scopes if "gmail" not in s]
-            scopes.append(scope)
-            self.data["SCOPES"] = scopes
-            click.echo(
-                click.style(
-                    f"  ✓ Gmail enabled with {('read-only' if not gmail_modify else 'read-write')} access", fg="green"
-                )
-            )
-        else:
-            # Remove Gmail scopes if disabled
-            scopes = self.data.get("SCOPES", DEFAULTS["SCOPES"].copy())
-            self.data["SCOPES"] = [s for s in scopes if "gmail" not in s]
 
     def get(self, key, default=None):
         env_key = f"GTOOL_{key.upper()}"
@@ -208,10 +131,10 @@ class Config:
         """Validate that Gmail scopes are configured when Gmail is enabled.
 
         Raises:
-            click.UsageError: If Gmail is enabled but scopes are not configured
+            ConfigValidationError: If Gmail is enabled but scopes are not configured
         """
         if self.is_gmail_enabled() and not self.has_gmail_scope("readonly"):
             logger.error("Gmail enabled but no Gmail scope configured")
-            raise click.UsageError(
+            raise ConfigValidationError(
                 "Gmail is enabled but no Gmail scope is configured. Run 'gtool config' to add Gmail permissions."
             )
