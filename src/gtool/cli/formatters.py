@@ -1,5 +1,5 @@
 """
-Formatting and color helper functions for calendarcli CLI output.
+Formatting and color helper functions for gtool CLI output.
 """
 
 from collections import defaultdict
@@ -8,7 +8,7 @@ import click
 from colorama import Fore, Style
 from tabulate import tabulate
 
-from .datetime_utils import format_event_time, get_event_date
+from gtool.utils.datetime import format_event_time, get_event_date
 
 
 def format_slots_table(free_slots: list) -> str:

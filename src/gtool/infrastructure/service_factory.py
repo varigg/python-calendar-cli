@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 from googleapiclient import discovery
 
-from caltool.google_auth import GoogleAuth
+from gtool.infrastructure.auth import GoogleAuth
 
 
 class ServiceFactory:

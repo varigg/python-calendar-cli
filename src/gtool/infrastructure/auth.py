@@ -22,8 +22,8 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from .config import Config
-from .errors import CLIError
+from gtool.cli.errors import CLIError
+from gtool.config.settings import Config
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class GoogleAuth:
     - Detecting and handling scope changes
     - Refreshing expired credentials
 
-    All Google API clients (GCalClient, GMailClient, etc.) use this class
+    All Google API clients (CalendarClient, GmailClient, etc.) use this class
     to obtain valid credentials, ensuring consistent auth behavior across the application.
     """
 
@@ -249,12 +249,12 @@ class GoogleAuth:
         try:
             flow = self._create_oauth_flow()
 
-            # Allow forcing console-based OAuth to avoid callback hangs: set CALTOOL_OAUTH_CONSOLE=1
-            force_console = os.environ.get("CALTOOL_OAUTH_CONSOLE", "").lower() in {"1", "true", "yes", "on"}
+            # Allow forcing console-based OAuth to avoid callback hangs: set GTOOL_OAUTH_CONSOLE=1
+            force_console = os.environ.get("GTOOL_OAUTH_CONSOLE", "").lower() in {"1", "true", "yes", "on"}
             if force_console:
                 if self._oauth_client_type == "web":
                     raise CLIError(
-                        "CALTOOL_OAUTH_CONSOLE=1 is not supported for WEB OAuth clients.\n"
+                        "GTOOL_OAUTH_CONSOLE=1 is not supported for WEB OAuth clients.\n"
                         "Use the local-server redirect flow (http://localhost:<port>/) with Authorized redirect URIs, "
                         "or create an Installed/Desktop OAuth client if you need a console/manual flow."
                     )
@@ -304,9 +304,9 @@ class GoogleAuth:
                         "- The browser auto-reused a previous tab/session\n\n"
                         "Fix:\n"
                         "- Close all in-progress OAuth tabs/windows\n"
-                        "- Ensure only one 'caltool' process is running\n"
+                        "- Ensure only one 'gtool' process is running\n"
                         "- Rerun the command and use the newly printed URL exactly once (prefer an incognito/private window)\n"
-                        "- If it still happens, switch to a different registered port via CALTOOL_OAUTH_PORTS"
+                        "- If it still happens, switch to a different registered port via GTOOL_OAUTH_PORTS"
                     )
 
                 if "redirect_uri_mismatch" in str(local_error):
@@ -314,7 +314,7 @@ class GoogleAuth:
                         "OAuth failed: redirect_uri_mismatch\n"
                         f"Attempted redirect URI: {attempted_redirect_uri or '<unknown>'}\n"
                         "Add this exact URI to Authorized redirect URIs for your OAuth client OR adjust "
-                        "CALTOOL_OAUTH_PORTS to a registered port."
+                        "GTOOL_OAUTH_PORTS to a registered port."
                     )
 
                 if self._oauth_client_type == "web":
@@ -324,7 +324,7 @@ class GoogleAuth:
                         f"Error: {local_error}\n"
                         "Console/OOB fallback is not allowed for WEB OAuth clients.\n"
                         "Fix by registering additional redirect URIs (http://localhost:<port>/) and setting "
-                        "CALTOOL_OAUTH_PORTS to a registered, free port."
+                        "GTOOL_OAUTH_PORTS to a registered, free port."
                     )
                 # Fallback to console flow if the local server callback fails (e.g., browser/redirect issues)
                 logger.warning(
@@ -355,13 +355,13 @@ class GoogleAuth:
             logger.error(json.dumps({"component": "GoogleAuth", "event": "oauth:failed", "error": str(e)}))
             raise CLIError(
                 "Authentication failed. If the browser redirect did not complete, rerun with '--debug' "
-                "and ensure your credentials.json matches the configured scopes. You can also set CALTOOL_OAUTH_CONSOLE=1 "
+                "and ensure your credentials.json matches the configured scopes. You can also set GTOOL_OAUTH_CONSOLE=1 "
                 "to use console-based OAuth."
             )
 
     def _get_oauth_host(self) -> str:
         """Return the host used for the OAuth local server redirect."""
-        return os.environ.get("CALTOOL_OAUTH_HOST", "localhost").strip() or "localhost"
+        return os.environ.get("GTOOL_OAUTH_HOST", "localhost").strip() or "localhost"
 
     def _get_oauth_ports(self) -> list[int]:
         """Return the list of allowed OAuth redirect ports.
@@ -369,7 +369,7 @@ class GoogleAuth:
         The ports must be pre-registered in Google Cloud Console for web OAuth clients.
         """
         default_ports = [8401]
-        raw = os.environ.get("CALTOOL_OAUTH_PORTS")
+        raw = os.environ.get("GTOOL_OAUTH_PORTS")
         if not raw:
             return default_ports
 
@@ -434,7 +434,7 @@ class GoogleAuth:
         )
         raise CLIError(
             "No available OAuth redirect ports found.\n"
-            "Free a port or change CALTOOL_OAUTH_PORTS to a different allowlist.\n"
+            "Free a port or change GTOOL_OAUTH_PORTS to a different allowlist.\n"
             "Also ensure the matching redirect URIs (http://<host>:<port>/) are registered in Google Cloud Console."
         )
 
@@ -583,10 +583,10 @@ class GoogleAuth:
                         "4. Enable the corresponding APIs in the Google Cloud Console\n"
                         "5. Delete your token.json and re-authenticate:\n"
                         f"   rm {self.token_file}\n"
-                        "   Then run 'caltool config' to reconfigure"
+                        "   Then run 'gtool config' to reconfigure"
                     )
 
-            raise CLIError("Token refresh failed. Please run 'caltool config' to re-authenticate.")
+            raise CLIError("Token refresh failed. Please run 'gtool config' to re-authenticate.")
 
     def _save_token(self, credentials: Credentials):
         """Save credentials to token file.

@@ -1,5 +1,5 @@
 """
-Datetime parsing and formatting utilities for calendarcli.
+Datetime parsing and formatting utilities for gtool.
 """
 
 import datetime

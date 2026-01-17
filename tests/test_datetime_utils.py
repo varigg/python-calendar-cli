@@ -6,11 +6,7 @@ import datetime
 
 import pytest
 
-from caltool.datetime_utils import (
-    format_event_time,
-    parse_date_range,
-    parse_time_option,
-)
+from gtool.utils.datetime import format_event_time, parse_date_range, parse_time_option
 
 # --- parse_date_range tests ---
 

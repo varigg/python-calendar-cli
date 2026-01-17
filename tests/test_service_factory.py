@@ -6,13 +6,12 @@ No @patch decorators - all dependencies injected via function arguments.
 
 from unittest.mock import MagicMock, patch
 
-
-from caltool.service_factory import ServiceFactory
+from gtool.infrastructure.service_factory import ServiceFactory
 
 
 def test_service_factory_build_calendar_service(mock_google_auth):
     """FR-003: ServiceFactory should build a working Calendar service."""
-    with patch("caltool.service_factory.discovery.build") as mock_build:
+    with patch("gtool.infrastructure.service_factory.discovery.build") as mock_build:
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
@@ -27,7 +26,7 @@ def test_service_factory_build_calendar_service(mock_google_auth):
 
 def test_service_factory_build_gmail_service(mock_google_auth):
     """FR-003: ServiceFactory should build a working Gmail service."""
-    with patch("caltool.service_factory.discovery.build") as mock_build:
+    with patch("gtool.infrastructure.service_factory.discovery.build") as mock_build:
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
@@ -42,7 +41,7 @@ def test_service_factory_build_gmail_service(mock_google_auth):
 
 def test_service_factory_caches_services(mock_google_auth):
     """ServiceFactory should cache built services for performance."""
-    with patch("caltool.service_factory.discovery.build") as mock_build:
+    with patch("gtool.infrastructure.service_factory.discovery.build") as mock_build:
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
@@ -60,7 +59,7 @@ def test_service_factory_caches_services(mock_google_auth):
 
 def test_service_factory_handles_different_apis(mock_google_auth):
     """ServiceFactory should handle different API types separately."""
-    with patch("caltool.service_factory.discovery.build") as mock_build:
+    with patch("gtool.infrastructure.service_factory.discovery.build") as mock_build:
         mock_calendar = MagicMock()
         mock_gmail = MagicMock()
         mock_build.side_effect = [mock_calendar, mock_gmail]

@@ -7,7 +7,7 @@ Separates retry policy from API client implementation.
 import time
 from typing import Any, Callable, Optional
 
-from caltool.error_categorizer import ErrorCategorizer
+from gtool.infrastructure.error_categorizer import ErrorCategorizer
 
 
 class RetryPolicy:

@@ -1,6 +1,6 @@
 [project]
-name = "caltool"
-version = "0.1.0"
+name = "gtool"
+version = "0.2.0"
 description = ""
 authors = [
     {name = "Steffen Vulpius",email = "steffen.vulpius+github@gmail.com"}
@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-caltool = "caltool.cli:cli"
+gtool = "gtool.cli.main:cli"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

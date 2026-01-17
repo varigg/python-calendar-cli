@@ -5,9 +5,9 @@ import os
 import click
 from platformdirs import user_config_dir
 
-logger = logging.getLogger("caltool")
+logger = logging.getLogger("gtool")
 
-APP_NAME = "caltool"
+APP_NAME = "caltool"  # Keep original name for backward compat with existing config files
 CONFIG_FILENAME = "config.json"
 CONFIG_PATH = os.path.join(user_config_dir(APP_NAME), CONFIG_FILENAME)
 
@@ -22,8 +22,8 @@ DEFAULTS = {
     "GMAIL_ENABLED": False,
     # OAuth local-server settings (used by GoogleAuth).
     # You can override these via env vars:
-    # - CALTOOL_OAUTH_HOST (default: localhost)
-    # - CALTOOL_OAUTH_PORTS (comma-separated allowlist; default: 8400..8410)
+    # - GTOOL_OAUTH_HOST (default: localhost)
+    # - GTOOL_OAUTH_PORTS (comma-separated allowlist; default: 8400..8410)
 }
 
 # Available scopes for configuration
@@ -49,9 +49,7 @@ class Config:
         missing = [k for k in required_keys if not self.get(k)]
         if missing:
             logger.error(f"Missing required config keys: {missing}")
-            raise click.UsageError(
-                f"Missing required config keys: {', '.join(missing)}. Run 'caltool config' to set up."
-            )
+            raise click.UsageError(f"Missing required config keys: {', '.join(missing)}. Run 'gtool config' to set up.")
         # Basic format validation
         if not isinstance(self.get("SCOPES"), list):
             logger.error(f"SCOPES must be a list, got {type(self.get('SCOPES'))}")
@@ -162,7 +160,7 @@ class Config:
             self.data["SCOPES"] = [s for s in scopes if "gmail" not in s]
 
     def get(self, key, default=None):
-        env_key = f"CALTOOL_{key.upper()}"
+        env_key = f"GTOOL_{key.upper()}"
         if env_key in os.environ:
             val = os.environ[env_key]
             logger.debug(f"Overriding config key '{key}' with env value: {val}")
@@ -215,5 +213,5 @@ class Config:
         if self.is_gmail_enabled() and not self.has_gmail_scope("readonly"):
             logger.error("Gmail enabled but no Gmail scope configured")
             raise click.UsageError(
-                "Gmail is enabled but no Gmail scope is configured. Run 'caltool config' to add Gmail permissions."
+                "Gmail is enabled but no Gmail scope is configured. Run 'gtool config' to add Gmail permissions."
             )

@@ -5,22 +5,23 @@ import click
 import google.auth.exceptions as google_auth_exceptions
 from colorama import Fore, Style
 
-from .config import Config
-from .datetime_utils import parse_date_range, parse_time_option
-from .error_categorizer import ErrorCategorizer
-from .errors import CLIError, handle_cli_exception
-from .format import (
+from gtool.cli.errors import CLIError, handle_cli_exception
+from gtool.cli.formatters import (
     format_calendars_table,
     get_calendar_colors,
     pretty_print_slots,
     print_events_grouped_by_date,
 )
-from .gcal_client_v2 import GCalClientV2
-from .gmail_client_v2 import GMailClientV2
-from .google_auth import GoogleAuth
-from .retry_policy import RetryPolicy
-from .scheduler import Scheduler, SearchParameters
-from .service_factory import ServiceFactory
+from gtool.clients.calendar import CalendarClient
+from gtool.clients.gmail import GmailClient
+from gtool.config.settings import Config
+from gtool.core.models import SearchParameters
+from gtool.core.scheduler import Scheduler
+from gtool.infrastructure.auth import GoogleAuth
+from gtool.infrastructure.error_categorizer import ErrorCategorizer
+from gtool.infrastructure.retry import RetryPolicy
+from gtool.infrastructure.service_factory import ServiceFactory
+from gtool.utils.datetime import parse_date_range, parse_time_option
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -42,13 +43,13 @@ def _create_client_dependencies(config):
 def create_calendar_client(config):
     """Create a composed Calendar client with retry policy."""
     service_factory, retry_policy = _create_client_dependencies(config)
-    return GCalClientV2(service_factory=service_factory, retry_policy=retry_policy)
+    return CalendarClient(service_factory=service_factory, retry_policy=retry_policy)
 
 
 def create_gmail_client(config):
     """Create a composed Gmail client with retry policy."""
     service_factory, retry_policy = _create_client_dependencies(config)
-    return GMailClientV2(service_factory=service_factory, retry_policy=retry_policy)
+    return GmailClient(service_factory=service_factory, retry_policy=retry_policy)
 
 
 # --- Unified CLI Group ---
@@ -75,14 +76,14 @@ def cli(ctx, debug):
 @cli.command("config")
 @click.pass_obj
 def config_cmd(config):
-    """Interactively set up or edit your calendarcli configuration."""
+    """Interactively set up or edit your gtool configuration."""
     click.echo(click.style("Starting interactive config setup...", fg="cyan"))
     config.prompt()
     config.save()
     click.echo(click.style("Configuration saved.", fg="green"))
 
 
-@cli.command(help="Find free time slots in your calendar(s). Example: caltool free today+1")
+@cli.command(help="Find free time slots in your calendar(s). Example: gtool free today+1")
 @click.argument("date_range", required=False)
 @click.option("--duration", default=30, show_default=True, help="Duration in minutes for the time slot.")
 @click.option("--availability-start", help="Start time for availability (HH:MM).", required=False)
@@ -139,7 +140,7 @@ def get_calendars(config):
         handle_cli_exception(e)
 
 
-@cli.command(help="Show upcoming events from all calendars. Example: caltool show-events today+2")
+@cli.command(help="Show upcoming events from all calendars. Example: gtool show-events today+2")
 @click.argument("date_range", required=False)
 @click.pass_obj
 def show_events(config, date_range):
@@ -178,10 +179,10 @@ def gmail(config):
     try:
         config.validate_gmail_scopes()
     except click.UsageError as e:
-        raise CLIError(f"Gmail not enabled. Run 'caltool config' to enable Gmail access. Error: {e}")
+        raise CLIError(f"Gmail not enabled. Run 'gtool config' to enable Gmail access. Error: {e}")
 
 
-@gmail.command("list", help="List Gmail messages. Example: caltool gmail list --query 'is:unread' --limit 5")
+@gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --limit 5")
 @click.option("--query", default="", help="Gmail search query (e.g., 'is:unread', 'from:user@example.com').")
 @click.option("--limit", default=10, show_default=True, help="Maximum number of messages to retrieve.")
 @click.pass_obj
@@ -209,7 +210,7 @@ def gmail_list(config, query, limit):
 
 
 @gmail.command(
-    "show-message", help="Show full details of a Gmail message. Example: caltool gmail show-message <message_id>"
+    "show-message", help="Show full details of a Gmail message. Example: gtool gmail show-message <message_id>"
 )
 @click.argument("message_id")
 @click.option(
@@ -232,7 +233,7 @@ def gmail_show_message(config, message_id, format_):
         handle_cli_exception(e)
 
 
-@gmail.command("delete", help="Delete a Gmail message. Example: caltool gmail delete <message_id>")
+@gmail.command("delete", help="Delete a Gmail message. Example: gtool gmail delete <message_id>")
 @click.argument("message_id")
 @click.option("--confirm", is_flag=True, help="Skip confirmation prompt.")
 @click.pass_obj

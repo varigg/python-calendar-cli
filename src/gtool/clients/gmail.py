@@ -1,4 +1,4 @@
-"""GMailClientV2 - composition-based Gmail API client.
+"""GmailClient - composition-based Gmail API client.
 
 Refactored to use composition pattern with dependency injection.
 Provides Gmail operations: list messages, get message, delete message, etc.
@@ -6,11 +6,11 @@ Provides Gmail operations: list messages, get message, delete message, etc.
 
 from typing import Any, List, Optional
 
-from caltool.retry_policy import RetryPolicy
-from caltool.service_factory import ServiceFactory
+from gtool.infrastructure.retry import RetryPolicy
+from gtool.infrastructure.service_factory import ServiceFactory
 
 
-class GMailClientV2:
+class GmailClient:
     """Gmail API client using composition pattern.
 
     This client manages Gmail API operations using composition for dependency
@@ -34,7 +34,7 @@ class GMailClientV2:
         retry_policy: Optional[RetryPolicy] = None,
         service: Optional[Any] = None,
     ) -> None:
-        """Initialize the GMailClientV2 with composition dependencies.
+        """Initialize the GmailClient with composition dependencies.
 
         Args:
             service_factory: ServiceFactory to build Gmail API services.
@@ -70,7 +70,7 @@ class GMailClientV2:
             CLIError: If Gmail scope missing, authentication fails, or API call fails.
 
         Example:
-            >>> client = GMailClientV2(service_factory=factory)
+            >>> client = GmailClient(service_factory=factory)
             >>> unread = client.list_messages("is:unread", limit=20)
             >>> for msg in unread:
             ...     print(msg['id'])

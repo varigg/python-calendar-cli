@@ -4,7 +4,7 @@ Tests error categorization for Google API errors using composition pattern.
 No @patch decorators - all dependencies injected via function arguments.
 """
 
-from caltool.error_categorizer import ErrorCategorizer
+from gtool.infrastructure.error_categorizer import ErrorCategorizer
 
 
 def test_error_categorizer_returns_auth_for_401(mock_http_error_401):

@@ -1,20 +1,11 @@
 import datetime
 import logging
-from dataclasses import dataclass
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from gtool.core.models import SearchParameters
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class SearchParameters:
-    start_date: datetime.date
-    end_date: datetime.date
-    start_time: datetime.time
-    end_time: datetime.time
-    duration: int
-    timezone: str
 
 
 class Scheduler:

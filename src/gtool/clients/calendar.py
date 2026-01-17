@@ -1,4 +1,4 @@
-"""GCalClientV2 - composition-based Google Calendar API client.
+"""CalendarClient - composition-based Google Calendar API client.
 
 Refactored to use composition pattern with dependency injection.
 Provides calendar operations: list calendars, get events, find free time, etc.
@@ -7,11 +7,11 @@ Provides calendar operations: list calendars, get events, find free time, etc.
 from datetime import date, datetime, time
 from typing import Any, List, Optional, Tuple
 
-from caltool.retry_policy import RetryPolicy
-from caltool.service_factory import ServiceFactory
+from gtool.infrastructure.retry import RetryPolicy
+from gtool.infrastructure.service_factory import ServiceFactory
 
 
-class GCalClientV2:
+class CalendarClient:
     """Google Calendar API client using composition pattern.
 
     This client manages Google Calendar API operations using composition
@@ -36,7 +36,7 @@ class GCalClientV2:
         retry_policy: Optional[RetryPolicy] = None,
         service: Optional[Any] = None,
     ) -> None:
-        """Initialize the GCalClientV2 with composition dependencies.
+        """Initialize the CalendarClient with composition dependencies.
 
         Args:
             service_factory: ServiceFactory to build Calendar API services.
@@ -63,7 +63,7 @@ class GCalClientV2:
             CLIError: If authentication fails or API call fails.
 
         Example:
-            >>> client = GCalClientV2(service_factory=factory)
+            >>> client = CalendarClient(service_factory=factory)
             >>> calendars = client.get_calendar_list()
             >>> for cal in calendars:
             ...     print(cal['summary'])
