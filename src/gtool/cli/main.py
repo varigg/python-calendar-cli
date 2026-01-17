@@ -18,6 +18,7 @@ from gtool.core.models import SearchParameters
 from gtool.core.scheduler import Scheduler
 from gtool.infrastructure.auth import GoogleAuth
 from gtool.infrastructure.error_categorizer import ErrorCategorizer
+from gtool.infrastructure.exceptions import AuthError
 from gtool.infrastructure.retry import RetryPolicy
 from gtool.infrastructure.service_factory import ServiceFactory
 from gtool.utils.datetime import parse_date_range, parse_time_option
@@ -64,7 +65,7 @@ def cli(ctx, debug):
     config = Config()
     try:
         config.validate()
-    except CLIError as e:
+    except (CLIError, AuthError) as e:
         handle_cli_exception(e)
     ctx.obj = config
 

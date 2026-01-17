@@ -18,9 +18,9 @@ from unittest.mock import Mock, patch
 import pytest
 from google.oauth2.credentials import Credentials
 
-from gtool.cli.errors import CLIError
 from gtool.config.settings import Config
 from gtool.infrastructure.auth import GoogleAuth
+from gtool.infrastructure.exceptions import AuthError
 
 
 class TestGoogleAuthInitialization:
@@ -41,20 +41,20 @@ class TestGoogleAuthInitialization:
             "TOKEN_FILE": "/tmp/token.json",
             "SCOPES": ["scope1"],
         }
-        with pytest.raises(CLIError):
+        with pytest.raises(AuthError):
             GoogleAuth(config)
 
     def test_init_raises_error_if_scopes_missing(self, mock_config):
         """GoogleAuth should raise CLIError if SCOPES is missing or empty."""
         mock_config.data["SCOPES"] = None
-        with pytest.raises(CLIError):
+        with pytest.raises(AuthError):
             GoogleAuth(mock_config)
 
 
 class TestGoogleAuthGetCredentials:
     """Test GoogleAuth.get_credentials() method - main credential flow."""
 
-    @patch("gtool.infrastructure.auth.Credentials.from_authorized_user_file")
+    @patch("google.oauth2.credentials.Credentials.from_authorized_user_file")
     def test_load_existing_valid_token(self, mock_creds_from_file, mock_config, tmp_path):
         """get_credentials should load existing token if valid."""
         # Setup
@@ -75,8 +75,8 @@ class TestGoogleAuthGetCredentials:
         assert result == mock_creds
         mock_creds_from_file.assert_called_once()
 
-    @patch("gtool.infrastructure.auth.Credentials.from_authorized_user_file")
-    @patch("gtool.infrastructure.auth.InstalledAppFlow")
+    @patch("google.oauth2.credentials.Credentials.from_authorized_user_file")
+    @patch("google_auth_oauthlib.flow.InstalledAppFlow")
     def test_refresh_expired_token(self, mock_flow, mock_creds_from_file, mock_config, tmp_path):
         """get_credentials should refresh expired token with refresh_token."""
         # Setup
@@ -98,7 +98,7 @@ class TestGoogleAuthGetCredentials:
         # Verify refresh was attempted
         assert result is not None
 
-    @patch("gtool.infrastructure.auth.InstalledAppFlow.from_client_secrets_file")
+    @patch("google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file")
     def test_run_oauth_flow_if_no_token(self, mock_flow, mock_config, tmp_path):
         """get_credentials should run OAuth flow if no token exists."""
         # Setup
@@ -140,7 +140,7 @@ class TestGoogleAuthScopeDetection:
         # Should not raise, returns empty list or None
         assert scopes is not None
 
-    @patch("gtool.infrastructure.auth.Credentials.from_authorized_user_file")
+    @patch("google.oauth2.credentials.Credentials.from_authorized_user_file")
     def test_detect_scope_changes(self, mock_creds_from_file, mock_config, tmp_path):
         """_detect_scope_changes should identify when new scopes are added."""
         mock_token_file = tmp_path / "token.json"
@@ -160,7 +160,7 @@ class TestGoogleAuthScopeDetection:
         has_changes = auth._detect_scope_changes(new, existing)
         assert has_changes is True
 
-    @patch("gtool.infrastructure.auth.Credentials.from_authorized_user_file")
+    @patch("google.oauth2.credentials.Credentials.from_authorized_user_file")
     def test_no_scope_changes_when_same(self, mock_creds_from_file, mock_config, tmp_path):
         """_detect_scope_changes should return False if scopes are identical."""
         mock_token_file = tmp_path / "token.json"

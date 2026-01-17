@@ -22,8 +22,8 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-from gtool.cli.errors import CLIError
 from gtool.config.settings import Config
+from gtool.infrastructure.exceptions import AuthError
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +55,12 @@ class GoogleAuth:
 
         raw_credentials_file = config.get("CREDENTIALS_FILE")
         if not raw_credentials_file or not isinstance(raw_credentials_file, str):
-            raise CLIError("CREDENTIALS_FILE not configured")
+            raise AuthError("CREDENTIALS_FILE not configured")
         self.credentials_file = os.path.expanduser(raw_credentials_file)
 
         raw_token_file = config.get("TOKEN_FILE")
         if not raw_token_file or not isinstance(raw_token_file, str):
-            raise CLIError("TOKEN_FILE not configured")
+            raise AuthError("TOKEN_FILE not configured")
         self.token_file = os.path.expanduser(raw_token_file)
 
         raw_scopes = config.get("SCOPES")
@@ -87,7 +87,7 @@ class GoogleAuth:
         )
 
         if not self.scopes:
-            raise CLIError("SCOPES not configured")
+            raise AuthError("SCOPES not configured")
 
     def get_credentials(self) -> Credentials:
         """Get valid Google API credentials.
@@ -253,7 +253,7 @@ class GoogleAuth:
             force_console = os.environ.get("GTOOL_OAUTH_CONSOLE", "").lower() in {"1", "true", "yes", "on"}
             if force_console:
                 if self._oauth_client_type == "web":
-                    raise CLIError(
+                    raise AuthError(
                         "GTOOL_OAUTH_CONSOLE=1 is not supported for WEB OAuth clients.\n"
                         "Use the local-server redirect flow (http://localhost:<port>/) with Authorized redirect URIs, "
                         "or create an Installed/Desktop OAuth client if you need a console/manual flow."
@@ -288,13 +288,13 @@ class GoogleAuth:
                 creds_any = flow.run_local_server(host=host, port=chosen_port, open_browser=True)
                 logger.debug(json.dumps({"component": "GoogleAuth", "event": "oauth:success", "mode": "local_server"}))
                 return cast(Credentials, creds_any)
-            except CLIError:
+            except AuthError:
                 raise
             except Exception as local_error:
                 local_error_text = str(local_error)
 
                 if "mismatching_state" in local_error_text or "State not equal" in local_error_text:
-                    raise CLIError(
+                    raise AuthError(
                         "OAuth local-server flow failed (mismatching_state).\n"
                         "This is a CSRF protection check: the 'state' returned to the callback does not match the state in the auth request.\n"
                         f"Attempted redirect URI: {attempted_redirect_uri or '<unknown>'}\n\n"
@@ -310,7 +310,7 @@ class GoogleAuth:
                     )
 
                 if "redirect_uri_mismatch" in str(local_error):
-                    raise CLIError(
+                    raise AuthError(
                         "OAuth failed: redirect_uri_mismatch\n"
                         f"Attempted redirect URI: {attempted_redirect_uri or '<unknown>'}\n"
                         "Add this exact URI to Authorized redirect URIs for your OAuth client OR adjust "
@@ -318,7 +318,7 @@ class GoogleAuth:
                     )
 
                 if self._oauth_client_type == "web":
-                    raise CLIError(
+                    raise AuthError(
                         "OAuth local-server flow failed.\n"
                         f"Attempted redirect URI: {attempted_redirect_uri or '<unknown>'}\n"
                         f"Error: {local_error}\n"
@@ -345,15 +345,15 @@ class GoogleAuth:
                     {"component": "GoogleAuth", "event": "oauth:credentials_missing", "path": self.credentials_file}
                 )
             )
-            raise CLIError(
+            raise AuthError(
                 f"Credentials file not found: {self.credentials_file}\n"
                 "Please download your credentials.json from Google Cloud Console and place it in the configured location."
             )
-        except CLIError:
+        except AuthError:
             raise
         except Exception as e:
             logger.error(json.dumps({"component": "GoogleAuth", "event": "oauth:failed", "error": str(e)}))
-            raise CLIError(
+            raise AuthError(
                 "Authentication failed. If the browser redirect did not complete, rerun with '--debug' "
                 "and ensure your credentials.json matches the configured scopes. You can also set GTOOL_OAUTH_CONSOLE=1 "
                 "to use console-based OAuth."
@@ -432,7 +432,7 @@ class GoogleAuth:
                 }
             )
         )
-        raise CLIError(
+        raise AuthError(
             "No available OAuth redirect ports found.\n"
             "Free a port or change GTOOL_OAUTH_PORTS to a different allowlist.\n"
             "Also ensure the matching redirect URIs (http://<host>:<port>/) are registered in Google Cloud Console."
@@ -505,7 +505,7 @@ class GoogleAuth:
                 )
                 return InstalledAppFlow.from_client_config(client_config, self.scopes)
 
-        raise CLIError(
+        raise AuthError(
             "Invalid credentials file format. Expected an OAuth client secrets JSON with a top-level 'installed' or 'web' key."
         )
 
@@ -554,7 +554,7 @@ class GoogleAuth:
                 gmail_scopes = [s for s in self.scopes if "gmail" in s.lower()]
 
                 if gmail_scopes:
-                    raise CLIError(
+                    raise AuthError(
                         "Token refresh failed: invalid_scope\n\n"
                         "The Gmail API scopes are not configured in your Google Cloud Project.\n\n"
                         "To fix this:\n"
@@ -573,7 +573,7 @@ class GoogleAuth:
                         "https://console.cloud.google.com/apis/library/gmail.googleapis.com"
                     )
                 else:
-                    raise CLIError(
+                    raise AuthError(
                         "Token refresh failed: invalid_scope\n\n"
                         f"One or more configured scopes are not valid for your OAuth client:\n{self.scopes}\n\n"
                         "To fix this:\n"
@@ -586,7 +586,7 @@ class GoogleAuth:
                         "   Then run 'gtool config' to reconfigure"
                     )
 
-            raise CLIError("Token refresh failed. Please run 'gtool config' to re-authenticate.")
+            raise AuthError("Token refresh failed. Please run 'gtool config' to re-authenticate.")
 
     def _save_token(self, credentials: Credentials):
         """Save credentials to token file.
@@ -609,7 +609,7 @@ class GoogleAuth:
             logger.debug(json.dumps({"component": "GoogleAuth", "event": "token:save_success"}))
         except Exception as e:
             logger.error(json.dumps({"component": "GoogleAuth", "event": "token:save_failed", "error": str(e)}))
-            raise CLIError(f"Failed to save authentication token: {e}")
+            raise AuthError(f"Failed to save authentication token: {e}")
 
     def _validate_credentials(self, credentials: Credentials) -> bool:
         """Check if credentials are valid.
