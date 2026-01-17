@@ -30,9 +30,9 @@ feature: "001-gmail-client-refactor"
 
 **Purpose**: Verify environment and test infrastructure readiness
 
-- [X] T001 Verify Python 3.12+ environment and all dependencies installed per pyproject.toml
-- [X] T002 Run existing test suite to establish baseline (all tests must pass before refactoring)
-- [X] T003 [P] Create backup branch for rollback safety
+- [x] T001 Verify Python 3.12+ environment and all dependencies installed per pyproject.toml
+- [x] T002 Run existing test suite to establish baseline (all tests must pass before refactoring)
+- [x] T003 [P] Create backup branch for rollback safety
 
 **Checkpoint**: Environment ready, baseline established
 
@@ -46,13 +46,13 @@ feature: "001-gmail-client-refactor"
 
 ### Test Infrastructure Setup
 
-- [X] T004 [P] Create test file structure: tests/test_google_auth.py, tests/test_google_client.py, tests/test_gmail_client.py
-- [X] T005 [P] Add mock fixtures for Google API responses in tests/conftest.py (Gmail message data, auth responses)
+- [x] T004 [P] Create test file structure: tests/test_google_auth.py, tests/test_google_client.py, tests/test_gmail_client.py
+- [x] T005 [P] Add mock fixtures for Google API responses in tests/conftest.py (Gmail message data, auth responses)
 
 ### Backward Compatibility Verification
 
-- [X] T006 Document current GCalClient public API contract in tests/test_backward_compatibility.py (method signatures, return types, exception behavior)
-- [X] T007 Create integration tests that verify Calendar functionality remains unchanged after refactoring
+- [x] T006 Document current GCalClient public API contract in tests/test_backward_compatibility.py (method signatures, return types, exception behavior)
+- [x] T007 Create integration tests that verify Calendar functionality remains unchanged after refactoring
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -66,10 +66,10 @@ feature: "001-gmail-client-refactor"
 
 ### US5 Tasks - Module Structure
 
-- [X] T008 [P] [US5] Create src/caltool/google_auth.py with GoogleAuth class skeleton (empty methods, type hints, docstrings)
-- [X] T009 [P] [US5] Create src/caltool/google_client.py with GoogleAPIClient ABC skeleton (abstract base class definition)
-- [X] T010 [US5] Write tests for GoogleAuth class initialization in tests/test_google_auth.py (TDD: tests fail initially)
-- [X] T011 [US5] Write tests for GoogleAPIClient base class in tests/test_google_client.py (TDD: tests fail initially)
+- [x] T008 [P] [US5] Create src/caltool/google_auth.py with GoogleAuth class skeleton (empty methods, type hints, docstrings)
+- [x] T009 [P] [US5] Create src/caltool/google_client.py with GoogleAPIClient ABC skeleton (abstract base class definition)
+- [x] T010 [US5] Write tests for GoogleAuth class initialization in tests/test_google_auth.py (TDD: tests fail initially)
+- [x] T011 [US5] Write tests for GoogleAPIClient base class in tests/test_google_client.py (TDD: tests fail initially)
 
 **Checkpoint US5**: Module structure established, ready for implementation
 
@@ -83,14 +83,14 @@ feature: "001-gmail-client-refactor"
 
 ### US1 Tasks - Authentication Extraction
 
-- [ ] T012 [US1] Implement GoogleAuth.**init**(config) in src/caltool/google_auth.py (store credentials_file, token_file, scopes)
-- [ ] T013 [US1] Implement GoogleAuth.get_credentials() method with OAuth flow logic (extracted from GCalClient.authenticate)
-- [ ] T014 [US1] Implement GoogleAuth.\_load_token_scopes() helper to read existing scopes from token file
-- [ ] T015 [US1] Implement GoogleAuth.\_detect_scope_changes() to compare requested vs stored scopes
-- [ ] T016 [US1] Add scope change notification logic (log message when new scopes detected, per research decision #1)
-- [ ] T017 [US1] Implement token refresh logic in GoogleAuth with incremental scope authorization support
-- [ ] T018 [US1] Run tests in tests/test_google_auth.py and verify all pass (TDD green phase)
-- [ ] T019 [US1] Add error handling for auth failures (categorize AUTH errors per research decision #3)
+- [x] T012 [US1] Implement GoogleAuth.**init**(config) in src/caltool/google_auth.py (store credentials_file, token_file, scopes)
+- [x] T013 [US1] Implement GoogleAuth.get_credentials() method with OAuth flow logic (extracted from GCalClient.authenticate)
+- [x] T014 [US1] Implement GoogleAuth.\_load_token_scopes() helper to read existing scopes from token file
+- [x] T015 [US1] Implement GoogleAuth.\_detect_scope_changes() to compare requested vs stored scopes
+- [x] T016 [US1] Add scope change notification logic (log message when new scopes detected, per research decision #1)
+- [x] T017 [US1] Implement token refresh logic in GoogleAuth with incremental scope authorization support
+- [x] T018 [US1] Run tests in tests/test_google_auth.py and verify all pass (TDD green phase)
+- [x] T019 [US1] Add error handling for auth failures (categorize AUTH errors per research decision #3)
 
 **Checkpoint US1**: GoogleAuth module complete and tested; ready to integrate with clients
 
@@ -104,13 +104,13 @@ feature: "001-gmail-client-refactor"
 
 ### US2 Tasks - Base Client Implementation
 
-- [ ] T020 [US2] Implement GoogleAPIClient.**init**(config, api_name, api_version, service) in src/caltool/google_client.py
-- [ ] T021 [US2] Implement GoogleAPIClient.\_build_service(api_name, api_version) using GoogleAuth for credentials
-- [ ] T022 [P] [US2] Extract retry_on_exception decorator from gcal_client.py to google_client.py (make it a base class method)
-- [ ] T023 [P] [US2] Implement GoogleAPIClient.categorize_error(HttpError) per research decision #3 (AUTH/QUOTA/TRANSIENT/CLIENT)
-- [ ] T024 [US2] Implement GoogleAPIClient.handle_api_error(HttpError) with user-friendly messages per error category
-- [ ] T025 [US2] Add @retry_on_exception decorator to base class with smart retry logic (don't retry AUTH/CLIENT, do retry QUOTA/TRANSIENT)
-- [ ] T026 [US2] Run tests in tests/test_google_client.py and verify all pass (TDD green phase)
+- [x] T020 [US2] Implement GoogleAPIClient.**init**(config, api_name, api_version, service) in src/caltool/google_client.py
+- [x] T021 [US2] Implement GoogleAPIClient.\_build_service(api_name, api_version) using GoogleAuth for credentials
+- [x] T022 [P] [US2] Extract retry_on_exception decorator from gcal_client.py to google_client.py (make it a base class method)
+- [x] T023 [P] [US2] Implement GoogleAPIClient.categorize_error(HttpError) per research decision #3 (AUTH/QUOTA/TRANSIENT/CLIENT)
+- [x] T024 [US2] Implement GoogleAPIClient.handle_api_error(HttpError) with user-friendly messages per error category
+- [x] T025 [US2] Add @retry_on_exception decorator to base class with smart retry logic (don't retry AUTH/CLIENT, do retry QUOTA/TRANSIENT)
+- [x] T026 [US2] Run tests in tests/test_google_client.py and verify all pass (TDD green phase)
 
 **Checkpoint US2**: Base client complete; ready to refactor GCalClient and implement GMailClient
 
@@ -124,13 +124,13 @@ feature: "001-gmail-client-refactor"
 
 ### GCalClient Refactoring Tasks
 
-- [ ] T027 [US1] [US2] Modify GCalClient.**init** to call super().**init**(config, "calendar", "v3", service) in src/caltool/gcal_client.py
-- [ ] T028 [US1] [US2] Remove authenticate() method from GCalClient (now handled by base class via GoogleAuth)
-- [ ] T029 [US1] [US2] Remove retry_on_exception decorator from GCalClient (now inherited from base class)
-- [ ] T030 [US1] [US2] Update GCalClient error handling to use base class handle_api_error() method
-- [ ] T031 [US1] [US2] Run ALL existing tests in tests/test_cli.py and verify 100% pass (backward compatibility check)
-- [ ] T032 [US1] [US2] Run tests/test_backward_compatibility.py to verify contract preservation
-- [ ] T033 [US1] [US2] Verify Calendar CLI commands work unchanged: `caltool get-calendars`, `caltool free today+1`
+- [x] T027 [US1] [US2] Modify GCalClient.**init** to call super().**init**(config, "calendar", "v3", service) in src/caltool/gcal_client.py
+- [x] T028 [US1] [US2] Remove authenticate() method from GCalClient (now handled by base class via GoogleAuth)
+- [x] T029 [US1] [US2] Remove retry_on_exception decorator from GCalClient (now inherited from base class)
+- [x] T030 [US1] [US2] Update GCalClient error handling to use base class handle_api_error() method
+- [x] T031 [US1] [US2] Run ALL existing tests in tests/test_cli.py and verify 100% pass (backward compatibility check)
+- [x] T032 [US1] [US2] Run tests/test_backward_compatibility.py to verify contract preservation
+- [x] T033 [US1] [US2] Verify Calendar CLI commands work unchanged: `caltool get-calendars`, `caltool free today+1`
 
 **Checkpoint P1 Stories (US1, US2, US5)**: Architectural foundation complete; Calendar functionality unchanged; ready for Gmail implementation
 
@@ -144,24 +144,24 @@ feature: "001-gmail-client-refactor"
 
 ### US3 Tasks - Gmail Client Implementation
 
-- [ ] T034 [P] [US3] Create src/caltool/gmail_client.py with GMailClient class inheriting from GoogleAPIClient
-- [ ] T035 [US3] Implement GMailClient.**init**(config, service) calling super().**init**(config, "gmail", "v1", service)
-- [ ] T036 [US3] Write tests for GMailClient initialization in tests/test_gmail_client.py (TDD: tests fail initially)
-- [ ] T037 [US3] Implement GMailClient.list_messages(query, max_results) method with Gmail API messages().list() call
-- [ ] T038 [US3] Add error handling to list_messages using base class categorize_error() and handle_api_error()
-- [ ] T039 [US3] Implement GMailClient.get_message(message_id) for retrieving individual message details
-- [ ] T040 [US3] Add retry decorator to Gmail API methods (inherited from base class)
-- [ ] T041 [US3] Run tests in tests/test_gmail_client.py and verify all pass (TDD green phase)
-- [ ] T042 [US3] Test Gmail client with mock API responses (rate limit 429, quota exceeded 403, success 200)
+- [x] T034 [P] [US3] Create src/caltool/gmail_client.py with GMailClient class inheriting from GoogleAPIClient
+- [x] T035 [US3] Implement GMailClient.**init**(config, service) calling super().**init**(config, "gmail", "v1", service)
+- [x] T036 [US3] Write tests for GMailClient initialization in tests/test_gmail_client.py (TDD: tests fail initially)
+- [x] T037 [US3] Implement GMailClient.list_messages(query, max_results) method with Gmail API messages().list() call
+- [x] T038 [US3] Add error handling to list_messages using base class categorize_error() and handle_api_error()
+- [x] T039 [US3] Implement GMailClient.get_message(message_id) for retrieving individual message details
+- [x] T040 [US3] Add retry decorator to Gmail API methods (inherited from base class)
+- [x] T041 [US3] Run tests in tests/test_gmail_client.py and verify all pass (TDD green phase)
+- [x] T042 [US3] Test Gmail client with mock API responses (rate limit 429, quota exceeded 403, success 200)
 
 ### US3 Tasks - CLI Integration
 
-- [ ] T043 [US3] Add `gmail` command group to src/caltool/cli.py using click.group()
-- [ ] T044 [US3] Implement `caltool gmail list` command with --limit and --query options
-- [ ] T045 [US3] Add --format option to gmail commands (json, pretty) using existing format.py helpers
-- [ ] T046 [US3] Implement message formatting in src/caltool/format.py for human-readable Gmail output
-- [ ] T047 [US3] Add error handling to gmail CLI commands using handle_cli_exception from errors.py
-- [ ] T048 [US3] Test gmail list command end-to-end with real Google account (manual testing)
+- [x] T043 [US3] Add `gmail` command group to src/caltool/cli.py using click.group()
+- [x] T044 [US3] Implement `caltool gmail list` command with --limit and --query options
+- [x] T045 [US3] Add --format option to gmail commands (json, pretty) using existing format.py helpers
+- [x] T046 [US3] Implement message formatting in src/caltool/format.py for human-readable Gmail output
+- [x] T047 [US3] Add error handling to gmail CLI commands using handle_cli_exception from errors.py
+- [x] T048 [US3] Test gmail list command end-to-end with real Google account (manual testing)
 
 **Checkpoint US3**: Gmail client MVP complete; `caltool gmail list` works end-to-end
 
@@ -175,19 +175,19 @@ feature: "001-gmail-client-refactor"
 
 ### US4 Tasks - Config Schema Extension
 
-- [ ] T049 [P] [US4] Extend DEFAULTS in src/caltool/config.py to include gmail.readonly scope example (commented out by default)
-- [ ] T050 [US4] Add Gmail scope options to Config.prompt() method with clear descriptions
-- [ ] T051 [US4] Update Config.validate() to check for Gmail scopes when Gmail commands are used
-- [ ] T052 [P] [US4] Add Gmail-specific config options (e.g., DEFAULT_LABEL, MAX_MESSAGES) to config schema
-- [ ] T053 [US4] Implement scope selection menu in config command (checkboxes for Calendar, Gmail, Drive, etc.)
-- [ ] T054 [US4] Test config command interactively: add Gmail scope, verify token refresh triggered
-- [ ] T055 [US4] Update tests/test_config.py to cover Gmail scope validation and prompting
+- [x] T049 [P] [US4] Extend DEFAULTS in src/caltool/config.py to include gmail.readonly scope example (commented out by default)
+- [x] T050 [US4] Add Gmail scope options to Config.prompt() method with clear descriptions
+- [x] T051 [US4] Update Config.validate() to check for Gmail scopes when Gmail commands are used
+- [x] T052 [P] [US4] Add Gmail-specific config options (e.g., DEFAULT_LABEL, MAX_MESSAGES) to config schema
+- [x] T053 [US4] Implement scope selection menu in config command (checkboxes for Calendar, Gmail, Drive, etc.)
+- [x] T054 [US4] Test config command interactively: add Gmail scope, verify token refresh triggered
+- [x] T055 [US4] Update tests/test_config.py to cover Gmail scope validation and prompting
 
 ### US4 Tasks - Scope Error Handling
 
-- [ ] T056 [US4] Add scope validation check in gmail commands (error if Gmail scope missing)
-- [ ] T057 [US4] Implement user-friendly error message: "Gmail scope not configured. Run 'caltool config' to add Gmail permissions."
-- [ ] T058 [US4] Test error flow: remove Gmail scope, run `caltool gmail list`, verify clear error message
+- [x] T056 [US4] Add scope validation check in gmail commands (error if Gmail scope missing)
+- [x] T057 [US4] Implement user-friendly error message: "Gmail scope not configured. Run 'caltool config' to add Gmail permissions."
+- [x] T058 [US4] Test error flow: remove Gmail scope, run `caltool gmail list`, verify clear error message
 
 **Checkpoint US4**: Configuration UX complete; users can self-serve Gmail setup
 
@@ -199,31 +199,31 @@ feature: "001-gmail-client-refactor"
 
 ### Documentation
 
-- [ ] T059 [P] Update README.md with Gmail functionality examples (`caltool gmail list`, scope configuration)
-- [ ] T060 [P] Update .github/copilot-instructions.md with new module responsibilities (google_auth, google_client, gmail_client)
-- [ ] T061 [P] Add docstrings to all new public methods (GoogleAuth, GoogleAPIClient, GMailClient) per constitution
+- [x] T059 [P] Update README.md with Gmail functionality examples (`caltool gmail list`, scope configuration)
+- [x] T060 [P] Update .github/copilot-instructions.md with new module responsibilities (google_auth, google_client, gmail_client)
+- [x] T061 [P] Add docstrings to all new public methods (GoogleAuth, GoogleAPIClient, GMailClient) per constitution
 
 ### Logging & Observability
 
-- [ ] T062 [P] Add structured logging to GoogleAuth (auth flow steps, scope changes, token refresh)
-- [ ] T063 [P] Add structured logging to GMailClient (API calls, message counts, errors)
-- [ ] T064 Verify all error messages are user-friendly and non-technical (no stack traces exposed)
+- [x] T062 [P] Add structured logging to GoogleAuth (auth flow steps, scope changes, token refresh)
+- [x] T063 [P] Add structured logging to GMailClient (API calls, message counts, errors)
+- [x] T064 Verify all error messages are user-friendly and non-technical (no stack traces exposed)
 
 ### Edge Case Handling
 
-- [ ] T065 Test offline behavior: disconnect internet, run gmail command, verify graceful error
-- [ ] T066 Test account switching: delete token file, re-authenticate with different account, verify works
-- [ ] T067 Test scope revocation: revoke Gmail scope in Google Account settings, run command, verify clear re-auth guidance
-- [ ] T068 Test missing credentials file: delete credentials.json, run command, verify helpful error message
+- [x] T065 Test offline behavior: disconnect internet, run gmail command, verify graceful error
+- [x] T066 Test account switching: delete token file, re-authenticate with different account, verify works
+- [x] T067 Test scope revocation: revoke Gmail scope in Google Account settings, run command, verify clear re-auth guidance
+- [x] T068 Test missing credentials file: delete credentials.json, run command, verify helpful error message
 
 ### Final Validation
 
-- [ ] T069 Run full test suite: `uv run pytest` (all tests must pass)
-- [ ] T070 Verify test coverage >80% for new modules (google_auth, google_client, gmail_client)
-- [ ] T071 Run type checking: `mypy src/caltool/` (no type errors)
-- [ ] T072 Run linting: `ruff check src/` (no violations)
-- [ ] T073 Verify all 5 constitution principles satisfied (separation, TDD, types, CLI, PEP8)
-- [ ] T074 Test all Calendar commands still work: get-calendars, free, show-events (regression check)
+- [x] T069 Run full test suite: `uv run pytest` (all tests must pass)
+- [x] T070 Verify test coverage >80% for new modules (google_auth, google_client, gmail_client)
+- [x] T071 Run type checking: `mypy src/caltool/` (no type errors)
+- [x] T072 Run linting: `ruff check src/` (no violations)
+- [x] T073 Verify all 5 constitution principles satisfied (separation, TDD, types, CLI, PEP8)
+- [x] T074 Test all Calendar commands still work: get-calendars, free, show-events (regression check)
 
 **Checkpoint**: Feature complete, tested, documented, and ready for release
 

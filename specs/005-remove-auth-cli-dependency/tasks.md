@@ -13,7 +13,7 @@
 
 - [ ] T001 [P] Add AuthenticationError class to src/gtool/cli/errors.py
   - Inherit from CLIError
-  - Add type hints for __init__(message: str) → None
+  - Add type hints for **init**(message: str) → None
   - Add comprehensive docstring explaining purpose and usage
   - Include example of how it will be used (wrapping Google auth errors)
 
@@ -37,7 +37,7 @@
 
 **Files Modified**: `src/gtool/infrastructure/google_client.py`, `tests/test_google_client.py`
 
-- [ ] T004 [P] Update GoogleAPIClient._execute_with_retry() in src/gtool/infrastructure/google_client.py
+- [ ] T004 [P] Update GoogleAPIClient.\_execute_with_retry() in src/gtool/infrastructure/google_client.py
   - Add exception handling for google.auth.exceptions.GoogleAuthError
   - Wrap caught exception as AuthenticationError with original message preserved
   - Add logging when exception is translated
@@ -45,7 +45,7 @@
 
 - [ ] T005 [P] Write test for exception translation in tests/test_google_client.py
   - Create mock that raises google.auth.exceptions.GoogleAuthError
-  - Call _execute_with_retry() and verify it raises AuthenticationError instead
+  - Call \_execute_with_retry() and verify it raises AuthenticationError instead
   - Verify original error message is included in AuthenticationError
   - Test multiple retry scenarios with auth errors
 
@@ -174,6 +174,7 @@
 ### Parallelization
 
 Tasks that can run in parallel (marked with [P]):
+
 - **Phase 1**: T001, T002 (both modify different test files)
 - **Phase 2**: T004, T005, T006, T007 (updating different test files)
 - **Phase 3**: T010-T016 (updating different CLI commands - can be done in any order)
