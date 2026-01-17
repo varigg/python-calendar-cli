@@ -60,7 +60,7 @@ class ServiceFactory:
             self._services[cache_key] = discovery.build(
                 api_name,
                 api_version,
-                credentials=self._auth.credentials,
+                credentials=self._auth.get_credentials(),
             )
 
         return self._services[cache_key]

@@ -17,7 +17,6 @@ import os
 import socket
 from typing import Optional, cast
 
-import click
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -518,9 +517,9 @@ class GoogleAuth:
             include_granted_scopes="true",
             prompt="consent",
         )
-        click.echo("Please visit this URL to authorize access:")
-        click.echo(auth_url)
-        code = click.prompt("Enter the authorization code here")
+        print("Please visit this URL to authorize access:")
+        print(auth_url)
+        code = input("Enter the authorization code here: ")
         flow.fetch_token(code=code)
         return cast(Credentials, flow.credentials)
 

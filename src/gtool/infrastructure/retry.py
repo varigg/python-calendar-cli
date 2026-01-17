@@ -82,12 +82,12 @@ class RetryPolicy:
             try:
                 return func(*args, **kwargs)
             except google.auth.exceptions.GoogleAuthError as exc:
-                # Wrap Google auth exceptions as AuthenticationError to keep CLI layer
-                # independent of Google auth implementation details (dependency inversion)
-                from gtool.cli.errors import AuthenticationError
+                # Wrap Google auth exceptions as AuthError
+                # CLI layer will translate this to AuthenticationError for user-facing messages
+                from gtool.infrastructure.exceptions import AuthError
 
                 logger.debug(f"Google auth error caught and wrapped: {exc}")
-                raise AuthenticationError(f"Authentication failed: {exc}") from exc
+                raise AuthError(f"Authentication failed: {exc}") from exc
             except Exception as exc:
                 attempt += 1
 
