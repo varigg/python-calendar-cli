@@ -62,13 +62,14 @@ def cli(ctx, debug):
     if debug:
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug logging enabled")
-    # Load config once and pass as obj
-    config = Config()
-    try:
-        config.validate()
-    except (CLIError, AuthError, ConfigValidationError) as e:
-        handle_cli_exception(e)
-    ctx.obj = config
+    # Load config once and pass as obj (unless already provided for testing)
+    if ctx.obj is None:
+        config = Config()
+        try:
+            config.validate()
+        except (CLIError, AuthError, ConfigValidationError) as e:
+            handle_cli_exception(e)
+        ctx.obj = config
 
 
 @cli.command("config")
@@ -176,10 +177,8 @@ def show_events(config, date_range):
 @click.pass_obj
 def gmail(config):
     """Gmail management commands."""
-    try:
-        config.validate_gmail_scopes()
-    except click.UsageError as e:
-        raise CLIError(f"Gmail not enabled. Run 'gtool config' to enable Gmail access. Error: {e}")
+    if not config.has_gmail_scope("readonly"):
+        raise click.UsageError("Gmail scope not configured. Run 'gtool config' to add Gmail permissions.")
 
 
 @gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --limit 5")
