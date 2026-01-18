@@ -1,6 +1,6 @@
-# Tasks: Layer Separation Enforcement
+q# Tasks: Layer Separation Enforcement
 
-**Feature**: Layer Separation Enforcement
+c**Feature**: Layer Separation Enforcement
 **Branch**: `006-layer-separation`
 **Input**: Design documents from `/specs/006-layer-separation/`
 
@@ -355,3 +355,92 @@ Each success criterion from spec.md maps to specific tasks:
 **Independent user stories**: US1 and US2 can be developed in parallel
 **Estimated MVP**: Phases 1-3 (18 tasks) delivers infrastructure reusability
 **High-value integration tests**: 7 targeted tests (Phase 6) catch real bugs without over-testing
+
+---
+
+## Phase 8: Quick Wins Refactor (Post-Implementation, Low Risk) 🔧
+
+**Context**: Implementation complete (commit 1776ced). YAGNI/KISS analysis (tech_debt_analysis.md) identified overengineering.
+
+**Purpose**: Remove dead code, fix bugs, eliminate unused abstractions without architectural changes.
+
+- [ ] T064 [P] [REFACTOR] Fix duplicate `pass` statement bug in src/gtool/infrastructure/exceptions.py ConfigValidationError class
+- [ ] T065 [P] [REFACTOR] Remove ServiceError class from src/gtool/infrastructure/exceptions.py (never raised anywhere)
+- [ ] T066 [P] [REFACTOR] Remove ServiceError imports from src/gtool/cli/decorators.py translate_exceptions
+- [ ] T067 [P] [REFACTOR] Remove ServiceError handling from translate_exceptions decorator in src/gtool/cli/decorators.py
+- [ ] T068 [REFACTOR] Remove \_services cache dictionary from src/gtool/infrastructure/service_factory.py ServiceFactory class
+- [ ] T069 [REFACTOR] Simplify build_service() in src/gtool/infrastructure/service_factory.py to direct discovery.build() call
+- [ ] T070 [REFACTOR] Remove validate_gmail_scopes() method from src/gtool/config/settings.py (dead code after perf fix)
+- [ ] T071 [REFACTOR] Update tests that call validate_gmail_scopes() to use has_gmail_scope() directly
+- [ ] T072 [REFACTOR] Run full test suite to verify refactor (uv run pytest -v)
+- [ ] T073 [P] [REFACTOR] Update tech_debt_analysis.md to mark Phase 1 items as complete
+- [ ] T074 [REFACTOR] Commit Phase 8 changes with message: "refactor: remove dead code and fix bugs (Phase 8 quick wins)"
+
+**Checkpoint**: ~50 lines removed, bugs fixed, no architectural changes
+
+---
+
+## Phase 9: Consolidation Refactor (Post-Implementation, Medium Risk) 🔧🔧
+
+**Purpose**: Simplify abstractions that add complexity without benefit. Requires careful refactoring.
+
+### Consolidate ErrorCategorizer
+
+- [ ] T075 [REFACTOR] Move categorize() logic from src/gtool/infrastructure/error_categorizer.py into src/gtool/infrastructure/retry.py as \_categorize_error()
+- [ ] T076 [REFACTOR] Update RetryPolicy.**init**() to remove error_categorizer parameter
+- [ ] T077 [REFACTOR] Update RetryPolicy.execute() to call self.\_categorize_error() instead of self.error_categorizer.categorize()
+- [ ] T078 [REFACTOR] Remove error_categorizer import from src/gtool/cli/main.py \_create_client_dependencies()
+- [ ] T079 [REFACTOR] Delete src/gtool/infrastructure/error_categorizer.py file
+- [ ] T080 [REFACTOR] Update tests/test_error_categorizer.py to test RetryPolicy.\_categorize_error() or move tests to test_retry_policy.py
+- [ ] T081 [REFACTOR] Run retry tests to verify consolidation (uv run pytest tests/test_retry_policy.py -v)
+
+### Simplify Exception Hierarchy
+
+- [ ] T082 [P] [REFACTOR] Remove ConfigError base class from src/gtool/infrastructure/exceptions.py (only ConfigValidationError is used)
+- [ ] T083 [P] [REFACTOR] Make ConfigValidationError inherit directly from Exception in src/gtool/infrastructure/exceptions.py
+- [ ] T084 [REFACTOR] Remove ConfigError handling from src/gtool/cli/decorators.py translate_exceptions (identical to ConfigValidationError)
+- [ ] T085 [REFACTOR] Reduce docstring verbosity in src/gtool/infrastructure/exceptions.py (currently 81 lines for 3 exceptions)
+- [ ] T086 [REFACTOR] Run exception tests to verify simplification (uv run pytest tests/test_errors.py -v)
+
+### Simplify OAuth Port Configuration
+
+- [ ] T087 [REFACTOR] Remove \_get_oauth_ports() method from src/gtool/infrastructure/auth.py (multi-port parsing)
+- [ ] T088 [REFACTOR] Remove \_choose_oauth_port() method from src/gtool/infrastructure/auth.py (port availability checking)
+- [ ] T089 [REFACTOR] Simplify \_run_oauth_flow() to use single hardcoded port (8401) with GTOOL_OAUTH_PORT override
+- [ ] T090 [REFACTOR] Update error messages to suggest GTOOL_OAUTH_PORT if port conflict occurs
+- [ ] T091 [REFACTOR] Update OAuth-related tests in tests/test_google_auth.py for simplified flow
+- [ ] T092 [REFACTOR] Run auth tests to verify OAuth simplification (uv run pytest tests/test_google_auth.py -v)
+
+### Validation & Completion
+
+- [ ] T093 [REFACTOR] Run full test suite to verify all consolidations (uv run pytest -v)
+- [ ] T094 [P] [REFACTOR] Verify line count reduction with wc -l src/gtool/\*_/_.py
+- [ ] T095 [P] [REFACTOR] Update tech_debt_analysis.md to mark Phase 2 items as complete
+- [ ] T096 [REFACTOR] Commit Phase 9 changes with message: "refactor: consolidate abstractions and simplify complexity (Phase 9)"
+
+**Checkpoint**: ~140 lines removed, simpler architecture maintained, all tests passing
+
+---
+
+## Phase 10: Future Consideration (Deferred) 📋
+
+**Status**: NOT IMPLEMENTED - Document for future reference
+
+These changes require substantial architectural shifts and should await project growth trajectory:
+
+- **RetryPolicy → Decorator**: Replace class-based RetryPolicy with `@retry()` decorator pattern (simpler for CLI use)
+- **Core → Clients Merge**: Consolidate Core layer (139 lines) into Clients layer if no growth
+- **ServiceFactory Evaluation**: Consider if factory pattern needed or if simple function suffices
+
+**Decision Point**: Revisit after 6 months or if project adds 3+ new API clients
+
+---
+
+## Refactor Task Count Summary
+
+- **Phase 8 (Quick Wins)**: 11 tasks (~50 lines removed, 40 min, LOW risk)
+- **Phase 9 (Consolidation)**: 22 tasks (~140 lines removed, 2 hours, MEDIUM risk)
+- **Phase 10 (Deferred)**: 0 tasks (documented for future)
+
+**Total Refactor Tasks**: 33 additional tasks
+**Combined Total**: 96 tasks (original 63 + refactor 33)

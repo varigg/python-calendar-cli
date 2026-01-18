@@ -126,15 +126,3 @@ class Config:
             # User has modify only if they explicitly have modify
             return any("gmail.modify" in s for s in scopes)
         return False
-
-    def validate_gmail_scopes(self) -> None:
-        """Validate that Gmail scopes are configured when Gmail is enabled.
-
-        Raises:
-            ConfigValidationError: If Gmail is enabled but scopes are not configured
-        """
-        if self.is_gmail_enabled() and not self.has_gmail_scope("readonly"):
-            logger.error("Gmail enabled but no Gmail scope configured")
-            raise ConfigValidationError(
-                "Gmail is enabled but no Gmail scope is configured. Run 'gtool config' to add Gmail permissions."
-            )

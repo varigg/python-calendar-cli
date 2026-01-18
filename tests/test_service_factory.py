@@ -39,24 +39,6 @@ def test_service_factory_build_gmail_service(mock_google_auth):
         assert "gmail" in str(call_args) or call_args[0] == ("gmail", "v1")
 
 
-def test_service_factory_caches_services(mock_google_auth):
-    """ServiceFactory should cache built services for performance."""
-    with patch("gtool.infrastructure.service_factory.discovery.build") as mock_build:
-        mock_service = MagicMock()
-        mock_build.return_value = mock_service
-
-        factory = ServiceFactory(auth=mock_google_auth)
-
-        # Build same service twice
-        result1 = factory.build_service("calendar", "v3")
-        result2 = factory.build_service("calendar", "v3")
-
-        # Both should be the same instance
-        assert result1 is result2
-        # But build should only be called once (cached)
-        assert mock_build.call_count == 1
-
-
 def test_service_factory_handles_different_apis(mock_google_auth):
     """ServiceFactory should handle different API types separately."""
     with patch("gtool.infrastructure.service_factory.discovery.build") as mock_build:

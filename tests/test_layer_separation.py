@@ -14,11 +14,7 @@ from click.testing import CliRunner
 from gtool.cli.errors import AuthenticationError
 from gtool.cli.main import cli
 from gtool.config.settings import Config
-from gtool.infrastructure.exceptions import (
-    AuthError,
-    ConfigValidationError,
-    ServiceError,
-)
+from gtool.infrastructure.exceptions import AuthError, ConfigValidationError
 from gtool.infrastructure.service_factory import ServiceFactory
 
 
@@ -38,19 +34,6 @@ class TestLayerSeparationExceptionTranslation:
             # Should fail with AuthenticationError (click.ClickException)
             assert result.exit_code != 0
             assert "OAuth token refresh failed" in result.output or result.exit_code == 1
-
-    def test_service_error_translated_to_cli_error(self):
-        """Test that ServiceError from infrastructure is translated to CLIError in CLI."""
-        runner = CliRunner()
-
-        with patch("gtool.cli.main.create_calendar_client") as mock_create:
-            # Simulate infrastructure raising ServiceError
-            mock_create.side_effect = ServiceError("Google API returned 503 Service Unavailable")
-
-            result = runner.invoke(cli, ["free", "today"], obj=Mock())
-
-            # Should fail with CLIError
-            assert result.exit_code != 0
 
 
 class TestConfigValidationErrorFlow:
@@ -131,16 +114,17 @@ class TestGmailScopeValidation:
         assert result.exit_code != 0
         # Should raise ConfigValidationError which translates to click.UsageError
 
-    def test_validate_gmail_scopes_raises_config_validation_error(self):
-        """Test that Config.validate_gmail_scopes raises ConfigValidationError."""
+    def test_has_gmail_scope_validation(self):
+        """Test that Config.has_gmail_scope correctly validates Gmail scopes."""
         config = Config()
         config.data["SCOPES"] = ["https://www.googleapis.com/auth/calendar"]
-        config.data["GMAIL_ENABLED"] = True
 
-        with pytest.raises(ConfigValidationError) as exc_info:
-            config.validate_gmail_scopes()
+        # Should return False when Gmail scope is missing
+        assert not config.has_gmail_scope("readonly")
 
-        assert "Gmail" in str(exc_info.value)
+        # Should return True when Gmail scope is present
+        config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.readonly")
+        assert config.has_gmail_scope("readonly")
 
 
 class TestLayerBoundaries:

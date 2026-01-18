@@ -125,3 +125,23 @@ CLI users encountering infrastructure errors (auth failures, API errors) should 
 - Feature 005-remove-auth-cli-dependency: Related effort addressing auth/CLI coupling
 - Feature 004-gtool-restructure: Established current module structure
 - Feature 002-dry-solid-cleanup: Addressed other architectural concerns
+
+---
+
+## Post-Implementation: YAGNI/KISS Refactoring
+
+**Status**: Implementation complete (commit 1776ced). Tech debt analysis completed (tech_debt_analysis.md).
+
+### Identified Overengineering Issues
+
+After completing the layer separation, a comprehensive YAGNI/KISS review identified moderate overengineering for a CLI tool of this scope (2 API clients, 5 commands). While the architecture achieves separation goals, several abstractions add complexity without proportional benefit:
+
+**High-Priority Simplifications** (See tech_debt_analysis.md for details):
+
+1. **ErrorCategorizer** - 55-line class with single method called from one place
+2. **ServiceFactory caching** - Cache never reused in CLI tool (process exits immediately)
+3. **Excessive exceptions** - ServiceError never raised, ConfigError never caught separately, duplicate code
+4. **Dead code** - validate_gmail_scopes() unused after performance fix
+5. **OAuth complexity** - 100 lines for edge cases (multi-port, host config) rarely needed
+
+**Recommendation**: Add Phase 8 (Refactor) and Phase 9 (Deep Refactor) to tasks.md addressing quick wins and consolidation opportunities while maintaining test coverage and backward compatibility.

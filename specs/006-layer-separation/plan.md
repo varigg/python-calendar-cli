@@ -387,3 +387,46 @@ def test_infrastructure_auth_with_missing_credentials():
 - Adding new infrastructure services
 - Performance optimization
 - Adding new authentication methods
+
+---
+
+## Post-Implementation: Refactoring Phases
+
+**Context**: Implementation completed successfully (commit 1776ced, all 114 tests passing). Subsequent YAGNI/KISS analysis (tech_debt_analysis.md) identified overengineering introduced during layer separation.
+
+### Phase 8: Quick Wins Refactor (Low Risk, High Impact)
+
+**Objective**: Remove dead code, fix bugs, eliminate unused abstractions without changing architecture.
+
+**Changes**:
+
+1. Fix duplicate `pass` bug in ConfigValidationError
+2. Remove ServiceError class (never raised anywhere)
+3. Remove ServiceFactory.\_services cache (never reused in CLI)
+4. Remove or deprecate validate_gmail_scopes() (dead code after perf fix)
+
+**Estimated Impact**: ~50 lines removed, 40 minutes work
+**Risk Level**: LOW - Purely deletion of unused code with test validation
+
+### Phase 9: Consolidation Refactor (Medium Risk)
+
+**Objective**: Simplify abstractions that add complexity without benefit.
+
+**Changes**:
+
+1. Merge ErrorCategorizer class into RetryPolicy (55-line class → private method)
+2. Simplify exception hierarchy (remove ConfigError base, simplify translate_exceptions)
+3. Simplify OAuth port configuration (remove multi-port allowlist, keep single env var)
+
+**Estimated Impact**: ~140 lines removed, 2 hours work
+**Risk Level**: MEDIUM - Requires careful refactoring with test updates
+
+### Phase 10: Future Consideration (Deferred)
+
+**Not implemented in this feature** - Document for future consideration:
+
+- Convert RetryPolicy class to decorator pattern
+- Merge Core layer into Clients (139 lines could consolidate)
+- Evaluate if ServiceFactory is needed (could be simple function)
+
+These require more substantial architectural changes and should await project growth trajectory clarity.

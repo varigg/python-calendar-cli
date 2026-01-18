@@ -3,14 +3,12 @@
 Exception Hierarchy:
     Exception (Python built-in)
     ├── AuthError - Authentication/authorization failures
-    ├── ServiceError - Google API service failures
     └── ConfigError - Configuration errors (base for config layer)
         └── ConfigValidationError (defined in config.settings)
 
 These exceptions are infrastructure-level and UI-agnostic. The CLI layer
 translates these to user-friendly CLI exceptions:
     - AuthError → AuthenticationError (CLI)
-    - ServiceError → CLIError (CLI)
     - ConfigValidationError → click.UsageError (CLI)
 """
 
@@ -26,22 +24,6 @@ class AuthError(Exception):
 
     This exception should NEVER be raised from CLI layer.
     CLI layer MUST catch this and translate to AuthenticationError.
-    """
-
-    pass
-
-
-class ServiceError(Exception):
-    """Base exception for service/API failures.
-
-    Raised when:
-    - Google API returns 5xx errors
-    - Network connectivity issues occur
-    - API quota exceeded (after retries)
-    - Service unavailable
-
-    This exception should NEVER be raised from CLI layer.
-    CLI layer MUST catch this and translate to CLIError.
     """
 
     pass
@@ -75,7 +57,5 @@ class ConfigValidationError(ConfigError):
     This exception should NEVER be raised from CLI layer.
     CLI layer MUST catch this and translate to click.UsageError.
     """
-
-    pass
 
     pass
