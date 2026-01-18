@@ -22,7 +22,7 @@ Before starting implementation:
    - [contracts/exception-contracts.md](contracts/exception-contracts.md) — Exception contracts
 
 2. **Understand current state**:
-   - Review [analysis.md](../../../analysis.md) for violation details
+   - Review [research.md](research.md) for violation details
    - Examine current exception usage in codebase
    - Run existing tests to establish baseline
 

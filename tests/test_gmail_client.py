@@ -7,14 +7,14 @@ No @patch decorators - all dependencies injected via constructor.
 from gtool.clients.gmail import GmailClient
 
 
-def test_gmail_client_v2_initialization(mock_service_factory, mock_retry_policy):
+def test_gmail_client_initialization(mock_service_factory, mock_retry_policy):
     """FR-005: GmailClient should initialize with dependencies via constructor."""
     client = GmailClient(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
     assert client._service_factory == mock_service_factory
     assert client._retry_policy == mock_retry_policy
 
 
-def test_gmail_client_v2_list_messages(mock_google_service):
+def test_gmail_client_list_messages(mock_google_service):
     """FR-005: GmailClient.list_messages() should return message list."""
     mock_google_service.users.return_value.messages.return_value.list.return_value.execute.return_value = {
         "messages": [
@@ -31,7 +31,7 @@ def test_gmail_client_v2_list_messages(mock_google_service):
     assert messages[0]["id"] == "msg1"
 
 
-def test_gmail_client_v2_get_message(mock_google_service):
+def test_gmail_client_get_message(mock_google_service):
     """FR-005: GmailClient.get_message() should return message details."""
     mock_google_service.users.return_value.messages.return_value.get.return_value.execute.return_value = {
         "id": "msg1",
@@ -53,7 +53,7 @@ def test_gmail_client_v2_get_message(mock_google_service):
     assert message["snippet"] == "This is a test message"
 
 
-def test_gmail_client_v2_delete_message(mock_google_service):
+def test_gmail_client_delete_message(mock_google_service):
     """FR-005: GmailClient.delete_message() should delete a message."""
     mock_google_service.users.return_value.messages.return_value.delete.return_value.execute.return_value = None
 

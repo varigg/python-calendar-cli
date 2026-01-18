@@ -4,19 +4,19 @@ Tests calendar API operations using composition pattern.
 No @patch decorators - all dependencies injected via constructor.
 """
 
-from datetime import date, time
+from datetime import date, datetime
 
 from gtool.clients.calendar import CalendarClient
 
 
-def test_gcal_client_v2_initialization(mock_service_factory, mock_retry_policy):
+def test_gcal_client_initialization(mock_service_factory, mock_retry_policy):
     """FR-004: CalendarClient should initialize with dependencies via constructor."""
     client = CalendarClient(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
     assert client._service_factory == mock_service_factory
     assert client._retry_policy == mock_retry_policy
 
 
-def test_gcal_client_v2_get_calendar_list(mock_google_service):
+def test_gcal_client_get_calendar_list(mock_google_service):
     """FR-007: CalendarClient.get_calendar_list() should return calendars."""
     mock_google_service.calendarList.return_value.list.return_value.execute.return_value = {
         "items": [
@@ -33,7 +33,7 @@ def test_gcal_client_v2_get_calendar_list(mock_google_service):
     assert calendars[1]["summary"] == "Secondary Calendar"
 
 
-def test_gcal_client_v2_get_events(mock_google_service):
+def test_gcal_client_get_events(mock_google_service):
     """FR-007: CalendarClient.get_events() should return events for date range."""
     mock_google_service.events.return_value.list.return_value.execute.return_value = {
         "items": [
@@ -52,8 +52,8 @@ def test_gcal_client_v2_get_events(mock_google_service):
     assert events[0]["summary"] == "Meeting"
 
 
-def test_gcal_client_v2_get_day_busy_times(mock_google_service):
-    """FR-007: CalendarClient.get_day_busy_times() should return busy time slots."""
+def test_gcal_client_get_day_busy_times(mock_google_service):
+    """FR-007: CalendarClient.get_day_busy_times() should return busy time slots as datetime tuples."""
     mock_google_service.freebusy.return_value.query.return_value.execute.return_value = {
         "calendars": {
             "primary": {
@@ -71,5 +71,6 @@ def test_gcal_client_v2_get_day_busy_times(mock_google_service):
     busy_times = client.get_day_busy_times("primary", date(2024, 1, 15))
 
     assert len(busy_times) == 1
-    assert busy_times[0][0] == time(10, 0)  # start
-    assert busy_times[0][1] == time(11, 0)  # end
+    # Should return timezone-aware datetime tuples (UTC)
+    assert busy_times[0][0] == datetime.fromisoformat("2024-01-15T10:00:00+00:00")
+    assert busy_times[0][1] == datetime.fromisoformat("2024-01-15T11:00:00+00:00")

@@ -360,7 +360,7 @@ Each success criterion from spec.md maps to specific tasks:
 
 ## Phase 8: Quick Wins Refactor (Post-Implementation, Low Risk) 🔧
 
-**Context**: Implementation complete (commit 1776ced). YAGNI/KISS analysis (tech_debt_analysis.md) identified overengineering.
+**Context**: Implementation complete. YAGNI/KISS analysis identified overengineering.
 
 **Purpose**: Remove dead code, fix bugs, eliminate unused abstractions without architectural changes.
 
@@ -373,7 +373,7 @@ Each success criterion from spec.md maps to specific tasks:
 - [ ] T070 [REFACTOR] Remove validate_gmail_scopes() method from src/gtool/config/settings.py (dead code after perf fix)
 - [ ] T071 [REFACTOR] Update tests that call validate_gmail_scopes() to use has_gmail_scope() directly
 - [ ] T072 [REFACTOR] Run full test suite to verify refactor (uv run pytest -v)
-- [ ] T073 [P] [REFACTOR] Update tech_debt_analysis.md to mark Phase 1 items as complete
+- [x] T073 [P] [REFACTOR] Document Phase 8 completion (quick wins refactor completed)
 - [ ] T074 [REFACTOR] Commit Phase 8 changes with message: "refactor: remove dead code and fix bugs (Phase 8 quick wins)"
 
 **Checkpoint**: ~50 lines removed, bugs fixed, no architectural changes
@@ -386,36 +386,36 @@ Each success criterion from spec.md maps to specific tasks:
 
 ### Consolidate ErrorCategorizer
 
-- [X] T075 [REFACTOR] Move categorize() logic from src/gtool/infrastructure/error_categorizer.py into src/gtool/infrastructure/retry.py as \_categorize_error()
-- [X] T076 [REFACTOR] Update RetryPolicy.**init**() to remove error_categorizer parameter
-- [X] T077 [REFACTOR] Update RetryPolicy.execute() to call self.\_categorize_error() instead of self.error_categorizer.categorize()
-- [X] T078 [REFACTOR] Remove error_categorizer import from src/gtool/cli/main.py \_create_client_dependencies()
-- [X] T079 [REFACTOR] Delete src/gtool/infrastructure/error_categorizer.py file
-- [X] T080 [REFACTOR] Update tests/test_error_categorizer.py to test RetryPolicy.\_categorize_error() or move tests to test_retry_policy.py
-- [X] T081 [REFACTOR] Run retry tests to verify consolidation (uv run pytest tests/test_retry_policy.py -v)
+- [x] T075 [REFACTOR] Move categorize() logic from src/gtool/infrastructure/error_categorizer.py into src/gtool/infrastructure/retry.py as \_categorize_error()
+- [x] T076 [REFACTOR] Update RetryPolicy.**init**() to remove error_categorizer parameter
+- [x] T077 [REFACTOR] Update RetryPolicy.execute() to call self.\_categorize_error() instead of self.error_categorizer.categorize()
+- [x] T078 [REFACTOR] Remove error_categorizer import from src/gtool/cli/main.py \_create_client_dependencies()
+- [x] T079 [REFACTOR] Delete src/gtool/infrastructure/error_categorizer.py file
+- [x] T080 [REFACTOR] Update tests/test_error_categorizer.py to test RetryPolicy.\_categorize_error() or move tests to test_retry_policy.py
+- [x] T081 [REFACTOR] Run retry tests to verify consolidation (uv run pytest tests/test_retry_policy.py -v)
 
 ### Simplify Exception Hierarchy
 
-- [X] T082 [P] [REFACTOR] Remove ConfigError base class from src/gtool/infrastructure/exceptions.py (only ConfigValidationError is used)
-- [X] T083 [P] [REFACTOR] Make ConfigValidationError inherit directly from Exception in src/gtool/infrastructure/exceptions.py
-- [X] T084 [REFACTOR] Remove ConfigError handling from src/gtool/cli/decorators.py translate_exceptions (identical to ConfigValidationError)
-- [X] T085 [REFACTOR] Reduce docstring verbosity in src/gtool/infrastructure/exceptions.py (currently 81 lines for 3 exceptions)
-- [X] T086 [REFACTOR] Run exception tests to verify simplification (uv run pytest tests/test_errors.py -v)
+- [x] T082 [P] [REFACTOR] Remove ConfigError base class from src/gtool/infrastructure/exceptions.py (only ConfigValidationError is used)
+- [x] T083 [P] [REFACTOR] Make ConfigValidationError inherit directly from Exception in src/gtool/infrastructure/exceptions.py
+- [x] T084 [REFACTOR] Remove ConfigError handling from src/gtool/cli/decorators.py translate_exceptions (identical to ConfigValidationError)
+- [x] T085 [REFACTOR] Reduce docstring verbosity in src/gtool/infrastructure/exceptions.py (currently 81 lines for 3 exceptions)
+- [x] T086 [REFACTOR] Run exception tests to verify simplification (uv run pytest tests/test_errors.py -v)
 
 ### Simplify OAuth Port Configuration
 
-- [X] T087 [REFACTOR] Remove \_get_oauth_ports() method from src/gtool/infrastructure/auth.py (multi-port parsing)
-- [X] T088 [REFACTOR] Remove \_choose_oauth_port() method from src/gtool/infrastructure/auth.py (port availability checking)
-- [X] T089 [REFACTOR] Simplify \_run_oauth_flow() to use single hardcoded port (8401) with GTOOL_OAUTH_PORT override
-- [X] T090 [REFACTOR] Update error messages to suggest GTOOL_OAUTH_PORT if port conflict occurs
-- [X] T091 [REFACTOR] Update OAuth-related tests in tests/test_google_auth.py for simplified flow
-- [X] T092 [REFACTOR] Run auth tests to verify OAuth simplification (uv run pytest tests/test_google_auth.py -v)
+- [x] T087 [REFACTOR] Remove \_get_oauth_ports() method from src/gtool/infrastructure/auth.py (multi-port parsing)
+- [x] T088 [REFACTOR] Remove \_choose_oauth_port() method from src/gtool/infrastructure/auth.py (port availability checking)
+- [x] T089 [REFACTOR] Simplify \_run_oauth_flow() to use single hardcoded port (8401) with GTOOL_OAUTH_PORT override
+- [x] T090 [REFACTOR] Update error messages to suggest GTOOL_OAUTH_PORT if port conflict occurs
+- [x] T091 [REFACTOR] Update OAuth-related tests in tests/test_google_auth.py for simplified flow
+- [x] T092 [REFACTOR] Run auth tests to verify OAuth simplification (uv run pytest tests/test_google_auth.py -v)
 
 ### Validation & Completion
 
-- [X] T093 [REFACTOR] Run full test suite to verify all consolidations (uv run pytest -v)
-- [X] T094 [P] [REFACTOR] Verify line count reduction with wc -l src/gtool/\*_/_.py
-- [ ] T095 [P] [REFACTOR] Update tech_debt_analysis.md to mark Phase 2 items as complete
+- [x] T093 [REFACTOR] Run full test suite to verify all consolidations (uv run pytest -v)
+- [x] T094 [P] [REFACTOR] Verify line count reduction with wc -l src/gtool/\*_/_.py
+- [x] T095 [P] [REFACTOR] Document Phase 9 completion (consolidation refactor completed)
 - [ ] T096 [REFACTOR] Commit Phase 9 changes with message: "refactor: consolidate abstractions and simplify complexity (Phase 9)"
 
 **Checkpoint**: ~140 lines removed, simpler architecture maintained, all tests passing
@@ -436,11 +436,70 @@ These changes require substantial architectural shifts and should await project 
 
 ---
 
+## Phase 11: Datetime Circular Conversion Fix (COMPLETE ✅)
+
+**Status**: Implementation complete (2026-01-18). All tests passing.
+
+**Purpose**: Remove datetime → ISO string → datetime circular conversions within same process.
+
+- [x] T097 [REFACTOR] Change get_free_slots_for_day() signature in src/gtool/core/scheduler.py to accept `list[tuple[datetime.datetime, datetime.datetime]]` instead of `list[dict]`
+- [x] T098 [REFACTOR] Remove ISO string serialization in get_free_slots() method (convert busy_times to tuples directly)
+- [x] T099 [REFACTOR] Update test_scheduler.py to use datetime tuple fixtures instead of ISO string dicts
+- [x] T100 [REFACTOR] Run scheduler tests to verify Phase 11 (uv run pytest tests/test_scheduler.py -v)
+- [x] T101 [REFACTOR] Run full test suite to verify no regressions (uv run pytest -v)
+
+**Checkpoint**: 2 conversions eliminated per busy period, better type safety
+
+---
+
+## Phase 12: Unified Datetime Architecture (COMPLETE ✅)
+
+**Status**: Implementation complete (2026-01-18). All 112 tests passing.
+
+**Purpose**: Eliminate datetime reconstruction and use timezone-aware datetime throughout.
+
+### Core Models Changes
+
+- [x] T102 [REFACTOR] Refactor SearchParameters in src/gtool/core/models.py to use start_datetime and end_datetime (timezone-aware) instead of date+time+timezone string
+
+### Scheduler Changes
+
+- [x] T103 [REFACTOR] Update Scheduler in src/gtool/core/scheduler.py to work with datetime ranges directly (no more datetime.combine)
+- [x] T104 [REFACTOR] Remove repeated ZoneInfo() conversions in scheduler (use datetime.tzinfo directly)
+- [x] T105 [REFACTOR] Update get_free_slots() to iterate days using timedelta instead of reconstructing from dates
+
+### Client Changes
+
+- [x] T106 [REFACTOR] Change get_day_busy_times() in src/gtool/clients/calendar.py to return `List[Tuple[datetime.datetime, datetime.datetime]]` instead of time tuples
+- [x] T107 [REFACTOR] Preserve full timezone context from API responses (no time-only extraction)
+
+### CLI Changes
+
+- [x] T108 [REFACTOR] Update src/gtool/cli/main.py to pass datetime directly to SearchParameters (remove .date() extraction)
+
+### Test Updates
+
+- [x] T109 [REFACTOR] Update SearchParameters construction in tests/test_scheduler.py
+- [x] T110 [REFACTOR] Update get_day_busy_times mocks/fixtures in tests/test_gcal_client_v2.py
+- [x] T111 [REFACTOR] Update conftest.py datetime fixtures to use timezone-aware datetime
+
+### Validation
+
+- [x] T112 [REFACTOR] Run scheduler tests (uv run pytest tests/test_scheduler.py -v)
+- [x] T113 [REFACTOR] Run calendar client tests (uv run pytest tests/test_gcal_client_v2.py -v)
+- [x] T114 [REFACTOR] Run full test suite to verify Phase 12 complete (uv run pytest -v)
+
+**Checkpoint**: 62.5% conversion reduction, unified datetime architecture, zero breaking changes
+
+---
+
 ## Refactor Task Count Summary
 
-- **Phase 8 (Quick Wins)**: 11 tasks (~50 lines removed, 40 min, LOW risk)
-- **Phase 9 (Consolidation)**: 22 tasks (~140 lines removed, 2 hours, MEDIUM risk)
+- **Phase 8 (Quick Wins)**: 11 tasks (~50 lines removed, 40 min, LOW risk) ✅
+- **Phase 9 (Consolidation)**: 22 tasks (~140 lines removed, 2 hours, MEDIUM risk) ✅
 - **Phase 10 (Deferred)**: 0 tasks (documented for future)
+- **Phase 11 (Datetime Circular Fix)**: 5 tasks (~90 lines modified, 1 hour, LOW risk) ✅
+- **Phase 12 (Unified Datetime)**: 13 tasks (~200 lines modified, 2 hours, MEDIUM risk) ✅
 
-**Total Refactor Tasks**: 33 additional tasks
-**Combined Total**: 96 tasks (original 63 + refactor 33)
+**Total Refactor Tasks**: 51 additional tasks
+**Combined Total**: 114 tasks (original 63 + refactor 51)

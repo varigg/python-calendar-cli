@@ -9,17 +9,15 @@ class SearchParameters:
     """Parameters for scheduling/free time search.
 
     Attributes:
-        start_date: Date to begin search
-        end_date: Date to end search (inclusive)
-        start_time: Daily start time for availability window
-        end_time: Daily end time for availability window
+        start_datetime: Start of search range (timezone-aware)
+        end_datetime: End of search range (timezone-aware, inclusive)
+        availability_start: Daily start time for availability window
+        availability_end: Daily end time for availability window
         duration: Minimum slot duration in minutes
-        timezone: Timezone for all time calculations
     """
 
-    start_date: datetime.date
-    end_date: datetime.date
-    start_time: datetime.time
-    end_time: datetime.time
+    start_datetime: datetime.datetime
+    end_datetime: datetime.datetime
+    availability_start: datetime.time
+    availability_end: datetime.time
     duration: int
-    timezone: str

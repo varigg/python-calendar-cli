@@ -1,7 +1,6 @@
 import datetime
 import logging
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from gtool.core.models import SearchParameters
 
@@ -23,10 +22,11 @@ class Scheduler:
         Initialize the Scheduler with configuration.
         Raises ValueError for invalid arguments.
         """
-        self.start_date = search_params.start_date
-        self.end_date = search_params.end_date
-        self.start_time = search_params.start_time
-        self.end_time = search_params.end_time
+        self.start_datetime = search_params.start_datetime
+        self.end_datetime = search_params.end_datetime
+        self.availability_start = search_params.availability_start
+        self.availability_end = search_params.availability_end
+        self.timezone = search_params.start_datetime.tzinfo
 
         if not isinstance(search_params.duration, int) or search_params.duration <= 0:
             raise ValueError("Duration must be a positive integer.")
@@ -34,7 +34,6 @@ class Scheduler:
             raise ValueError("calendar_ids must be a list of strings.")
         self.client = client
         self.duration = search_params.duration
-        self.timezone = search_params.timezone
         self.calendar_ids = calendar_ids
         self.logger = logging.getLogger(__name__)
         self.logger.debug(f"Scheduler initialized with config: {self.__dict__}")
@@ -59,56 +58,71 @@ class Scheduler:
 
     def get_free_slots_for_day(
         self,
-        busy_times: list[dict],
+        busy_times: list[tuple[datetime.datetime, datetime.datetime]],
         start: datetime.datetime,
         end: datetime.datetime,
         duration_minutes: int,
-    ) -> list[tuple]:
+    ) -> list[tuple[datetime.datetime, datetime.datetime]]:
         """
         Get free slots for a specific day, handling overlapping and adjacent busy times.
-        Returns a list of (start, end) tuples.
+
+        Args:
+            busy_times: List of (start, end) datetime tuples representing busy periods.
+            start: Start of availability window.
+            end: End of availability window.
+            duration_minutes: Minimum slot duration in minutes.
+
+        Returns:
+            List of (start, end) datetime tuples representing free slots.
         """
         free_slots = []
         cursor = start
         # Sort and merge overlapping/adjacent busy times
-        busy_sorted = sorted(busy_times, key=lambda b: b["start"])
+        busy_sorted = sorted(busy_times, key=lambda b: b[0])
         merged_busy = []
-        for b in busy_sorted:
-            b_start = datetime.datetime.fromisoformat(b["start"])
-            b_end = datetime.datetime.fromisoformat(b["end"])
+        for b_start, b_end in busy_sorted:
             if not merged_busy:
-                merged_busy.append({"start": b_start, "end": b_end})
+                merged_busy.append((b_start, b_end))
             else:
-                last = merged_busy[-1]
-                if b_start <= last["end"]:  # Overlapping or adjacent
-                    last["end"] = max(last["end"], b_end)
+                last_start, last_end = merged_busy[-1]
+                if b_start <= last_end:  # Overlapping or adjacent
+                    merged_busy[-1] = (last_start, max(last_end, b_end))
                 else:
-                    merged_busy.append({"start": b_start, "end": b_end})
-        for busy in merged_busy:
-            if self.is_slot_long_enough(cursor, busy["start"], duration_minutes):
-                free_slots.append((cursor, busy["start"]))
-            cursor = max(cursor, busy["end"])
+                    merged_busy.append((b_start, b_end))
+        for busy_start, busy_end in merged_busy:
+            if self.is_slot_long_enough(cursor, busy_start, duration_minutes):
+                free_slots.append((cursor, busy_start))
+            cursor = max(cursor, busy_end)
         if cursor < end and self.is_slot_long_enough(cursor, end, duration_minutes):
             free_slots.append((cursor, end))
         return free_slots
 
-    def get_free_slots(self) -> list[tuple]:
+    def get_free_slots(self) -> list[tuple[datetime.datetime, datetime.datetime]]:
         """
-        Get all free slots between start_date and end_date (inclusive).
+        Get all free slots between start_datetime and end_datetime (inclusive).
         Handles errors and logs a summary for each day.
         """
-        current_date = self.start_date
+        current_datetime = self.start_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = self.end_datetime.date()
         free_slots = []
-        while current_date <= self.end_date:
-            try:
-                self.logger.debug(f"Processing date: {current_date}")
-                day_start = datetime.datetime.combine(current_date, self.start_time, tzinfo=ZoneInfo(self.timezone))
-                day_end = datetime.datetime.combine(current_date, self.end_time, tzinfo=ZoneInfo(self.timezone))
-                busy_times = self.client.get_day_busy_times(self.calendar_ids, day_start, day_end, self.timezone)
-                slots = self.get_free_slots_for_day(busy_times, day_start, day_end, self.duration)
-                free_slots.extend(slots)
-                self.logger.info(f"{current_date}: Found {len(slots)} free slots.")
-            except Exception as e:
-                self.logger.error(f"Error processing {current_date}: {e}")
-            current_date += datetime.timedelta(days=1)
+
+        while current_datetime.date() <= end_date:
+            current_date = current_datetime.date()
+            self.logger.debug(f"Processing date: {current_date}")
+
+            # Build availability window for this day
+            day_start = datetime.datetime.combine(current_date, self.availability_start, tzinfo=self.timezone)
+            day_end = datetime.datetime.combine(current_date, self.availability_end, tzinfo=self.timezone)
+
+            # Collect busy times from all calendars
+            all_busy_times = []
+            for calendar_id in self.calendar_ids:
+                busy_datetime_tuples = self.client.get_day_busy_times(calendar_id, current_date)
+                all_busy_times.extend(busy_datetime_tuples)
+
+            slots = self.get_free_slots_for_day(all_busy_times, day_start, day_end, self.duration)
+            free_slots.extend(slots)
+            self.logger.info(f"{current_date}: Found {len(slots)} free slots.")
+            current_datetime += datetime.timedelta(days=1)
+
         return free_slots

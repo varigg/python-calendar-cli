@@ -6,6 +6,7 @@ and validating slot durations.
 
 import datetime
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -16,13 +17,13 @@ from gtool.core.scheduler import Scheduler
 @pytest.fixture
 def scheduler_fixture():
     """Create a configured scheduler with mock client."""
+    tz = ZoneInfo("America/Los_Angeles")
     search_params = SearchParameters(
-        start_date=datetime.date(2025, 5, 2),
-        end_date=datetime.date(2025, 5, 2),
-        start_time=datetime.time(8, 0),
-        end_time=datetime.time(18, 0),
+        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
+        end_datetime=datetime.datetime(2025, 5, 2, 23, 59, 59, tzinfo=tz),
+        availability_start=datetime.time(8, 0),
+        availability_end=datetime.time(18, 0),
         duration=30,
-        timezone="America/Los_Angeles",
     )
     return Scheduler(
         client=Mock(),
@@ -98,7 +99,7 @@ def test_get_free_slots_for_day_one_busy_block(scheduler_fixture):
     """One busy block should create two free slots."""
     start = datetime.datetime(2025, 5, 2, 8, 0)
     end = datetime.datetime(2025, 5, 2, 18, 0)
-    busy = [{"start": "2025-05-02T10:00:00", "end": "2025-05-02T11:00:00"}]
+    busy = [(datetime.datetime(2025, 5, 2, 10, 0), datetime.datetime(2025, 5, 2, 11, 0))]
     slots = scheduler_fixture.get_free_slots_for_day(busy, start, end, 30)
     assert len(slots) == 2
     # First free slot: 8:00 - 10:00
@@ -115,8 +116,8 @@ def test_get_free_slots_for_day_overlapping_busy_times(scheduler_fixture):
     end = datetime.datetime(2025, 5, 2, 18, 0)
     # Two overlapping meetings
     busy = [
-        {"start": "2025-05-02T10:00:00", "end": "2025-05-02T11:00:00"},
-        {"start": "2025-05-02T10:30:00", "end": "2025-05-02T12:00:00"},
+        (datetime.datetime(2025, 5, 2, 10, 0), datetime.datetime(2025, 5, 2, 11, 0)),
+        (datetime.datetime(2025, 5, 2, 10, 30), datetime.datetime(2025, 5, 2, 12, 0)),
     ]
     slots = scheduler_fixture.get_free_slots_for_day(busy, start, end, 30)
     assert len(slots) == 2
@@ -130,8 +131,8 @@ def test_get_free_slots_for_day_adjacent_busy_times(scheduler_fixture):
     start = datetime.datetime(2025, 5, 2, 8, 0)
     end = datetime.datetime(2025, 5, 2, 18, 0)
     busy = [
-        {"start": "2025-05-02T10:00:00", "end": "2025-05-02T11:00:00"},
-        {"start": "2025-05-02T11:00:00", "end": "2025-05-02T12:00:00"},
+        (datetime.datetime(2025, 5, 2, 10, 0), datetime.datetime(2025, 5, 2, 11, 0)),
+        (datetime.datetime(2025, 5, 2, 11, 0), datetime.datetime(2025, 5, 2, 12, 0)),
     ]
     slots = scheduler_fixture.get_free_slots_for_day(busy, start, end, 30)
     assert len(slots) == 2
@@ -146,8 +147,8 @@ def test_get_free_slots_for_day_slot_too_short(scheduler_fixture):
     end = datetime.datetime(2025, 5, 2, 18, 0)
     # Gap of only 15 minutes (less than 30 min duration)
     busy = [
-        {"start": "2025-05-02T09:00:00", "end": "2025-05-02T10:00:00"},
-        {"start": "2025-05-02T10:15:00", "end": "2025-05-02T11:00:00"},
+        (datetime.datetime(2025, 5, 2, 9, 0), datetime.datetime(2025, 5, 2, 10, 0)),
+        (datetime.datetime(2025, 5, 2, 10, 15), datetime.datetime(2025, 5, 2, 11, 0)),
     ]
     slots = scheduler_fixture.get_free_slots_for_day(busy, start, end, 30)
     # Should have: 8:00-9:00 (60min) and 11:00-18:00 (7hrs)
@@ -161,7 +162,7 @@ def test_get_free_slots_for_day_busy_all_day(scheduler_fixture):
     """Busy for entire availability window should return no slots."""
     start = datetime.datetime(2025, 5, 2, 8, 0)
     end = datetime.datetime(2025, 5, 2, 18, 0)
-    busy = [{"start": "2025-05-02T08:00:00", "end": "2025-05-02T18:00:00"}]
+    busy = [(datetime.datetime(2025, 5, 2, 8, 0), datetime.datetime(2025, 5, 2, 18, 0))]
     slots = scheduler_fixture.get_free_slots_for_day(busy, start, end, 30)
     assert len(slots) == 0
 
@@ -171,13 +172,13 @@ def test_get_free_slots_for_day_busy_all_day(scheduler_fixture):
 
 def test_scheduler_rejects_zero_duration():
     """Scheduler should reject zero duration."""
+    tz = ZoneInfo("America/Los_Angeles")
     search_params = SearchParameters(
-        start_date=datetime.date(2025, 5, 2),
-        end_date=datetime.date(2025, 5, 2),
-        start_time=datetime.time(8, 0),
-        end_time=datetime.time(18, 0),
+        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
+        end_datetime=datetime.datetime(2025, 5, 2, 23, 59, 59, tzinfo=tz),
+        availability_start=datetime.time(8, 0),
+        availability_end=datetime.time(18, 0),
         duration=0,
-        timezone="America/Los_Angeles",
     )
     with pytest.raises(ValueError, match="Duration must be a positive integer"):
         Scheduler(client=Mock(), search_params=search_params, calendar_ids=["primary"])
@@ -185,13 +186,13 @@ def test_scheduler_rejects_zero_duration():
 
 def test_scheduler_rejects_negative_duration():
     """Scheduler should reject negative duration."""
+    tz = ZoneInfo("America/Los_Angeles")
     search_params = SearchParameters(
-        start_date=datetime.date(2025, 5, 2),
-        end_date=datetime.date(2025, 5, 2),
-        start_time=datetime.time(8, 0),
-        end_time=datetime.time(18, 0),
+        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
+        end_datetime=datetime.datetime(2025, 5, 2, 23, 59, 59, tzinfo=tz),
+        availability_start=datetime.time(8, 0),
+        availability_end=datetime.time(18, 0),
         duration=-30,
-        timezone="America/Los_Angeles",
     )
     with pytest.raises(ValueError, match="Duration must be a positive integer"):
         Scheduler(client=Mock(), search_params=search_params, calendar_ids=["primary"])
@@ -199,13 +200,13 @@ def test_scheduler_rejects_negative_duration():
 
 def test_scheduler_rejects_invalid_calendar_ids():
     """Scheduler should reject non-list calendar_ids."""
+    tz = ZoneInfo("America/Los_Angeles")
     search_params = SearchParameters(
-        start_date=datetime.date(2025, 5, 2),
-        end_date=datetime.date(2025, 5, 2),
-        start_time=datetime.time(8, 0),
-        end_time=datetime.time(18, 0),
+        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
+        end_datetime=datetime.datetime(2025, 5, 2, 23, 59, 59, tzinfo=tz),
+        availability_start=datetime.time(8, 0),
+        availability_end=datetime.time(18, 0),
         duration=30,
-        timezone="America/Los_Angeles",
     )
     with pytest.raises(ValueError, match="calendar_ids must be a list"):
         Scheduler(client=Mock(), search_params=search_params, calendar_ids="primary")
@@ -219,13 +220,13 @@ def test_get_free_slots_calls_client_for_each_day():
     mock_client = Mock()
     mock_client.get_day_busy_times.return_value = []
 
+    tz = ZoneInfo("America/Los_Angeles")
     search_params = SearchParameters(
-        start_date=datetime.date(2025, 5, 2),
-        end_date=datetime.date(2025, 5, 4),  # 3 days
-        start_time=datetime.time(8, 0),
-        end_time=datetime.time(18, 0),
+        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
+        end_datetime=datetime.datetime(2025, 5, 4, 23, 59, 59, tzinfo=tz),  # 3 days
+        availability_start=datetime.time(8, 0),
+        availability_end=datetime.time(18, 0),
         duration=30,
-        timezone="America/Los_Angeles",
     )
     scheduler = Scheduler(
         client=mock_client,

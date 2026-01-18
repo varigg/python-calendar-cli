@@ -78,7 +78,7 @@ All phases completed successfully with comprehensive testing and validation.
 - ✅ No click imports in config
 - ✅ No CLI imports in infrastructure
 - ✅ No CLI imports in config
-- ✅ All 114 tests passing (100 original + 14 integration)
+- ✅ All tests passing (original + integration)
 
 ## Final Validation Results
 
@@ -89,9 +89,9 @@ All phases completed successfully with comprehensive testing and validation.
   - CLI: all exception translation in place
 
 ✓ Test Coverage
-  - Unit tests: 100 tests (all passing)
-  - Integration tests: 14 tests (all passing)
-  - Total: 114 tests passing
+  - Unit tests: all passing
+  - Integration tests: all passing
+  - Total: all tests passing
 
 ✓ Code Quality
   - Ruff linting: passing
@@ -124,7 +124,7 @@ Phase 6: Add integration tests for layer separation
 
 | Metric                                 | Target      | Result         | Status  |
 | -------------------------------------- | ----------- | -------------- | ------- |
-| All tests passing                      | 100%        | 114/114 (100%) | ✅ PASS |
+| All tests passing                      | 100%        | All passing    | ✅ PASS |
 | No click in infrastructure             | 0 imports   | 0 imports      | ✅ PASS |
 | No click in config                     | 0 imports   | 0 imports      | ✅ PASS |
 | No CLI imports in infrastructure       | 0 imports   | 0 imports      | ✅ PASS |

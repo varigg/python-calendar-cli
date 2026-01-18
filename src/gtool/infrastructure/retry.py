@@ -6,12 +6,22 @@ Separates retry policy from API client implementation.
 
 import logging
 import time
+from enum import Enum
 from typing import Any, Callable
 
 import google.auth.exceptions
 from googleapiclient.errors import HttpError
 
 logger = logging.getLogger(__name__)
+
+
+class ErrorCategory(str, Enum):
+    """Categories for HTTP error classification."""
+
+    AUTH = "AUTH"  # Authentication/authorization errors
+    QUOTA = "QUOTA"  # Rate limiting or quota errors
+    TRANSIENT = "TRANSIENT"  # Temporary server errors (retryable)
+    CLIENT = "CLIENT"  # Client errors (not retryable)
 
 
 class RetryPolicy:
@@ -43,7 +53,7 @@ class RetryPolicy:
         self.max_retries = max_retries
         self.delay = delay
 
-    def _categorize_error(self, error: HttpError) -> str:
+    def _categorize_error(self, error: HttpError) -> ErrorCategory:
         """Categorize an HTTP error from Google API.
 
         Maps HTTP status codes to retry-relevant categories:
@@ -56,7 +66,7 @@ class RetryPolicy:
             error: HttpError from googleapiclient library
 
         Returns:
-            str: One of "AUTH", "QUOTA", "TRANSIENT", or "CLIENT"
+            ErrorCategory: One of AUTH, QUOTA, TRANSIENT, or CLIENT
 
         Raises:
             TypeError: If error is not an HttpError instance
@@ -68,29 +78,28 @@ class RetryPolicy:
 
         # Map status codes to categories
         if status_code == 401:
-            return "AUTH"
+            return ErrorCategory.AUTH
         elif status_code == 403:
             # 403 can be quota exhausted or permission denied
             # Treat as QUOTA for retry logic (most common case)
-            return "QUOTA"
+            return ErrorCategory.QUOTA
         elif status_code == 429:
-            return "QUOTA"
+            return ErrorCategory.QUOTA
         elif 500 <= status_code < 600:
-            return "TRANSIENT"
+            return ErrorCategory.TRANSIENT
         else:
-            return "CLIENT"
+            return ErrorCategory.CLIENT
 
-    def should_retry(self, error_category: str) -> bool:
+    def should_retry(self, error_category: ErrorCategory) -> bool:
         """Determine if an error should be retried.
 
         Args:
-            error_category: Error category string
+            error_category: ErrorCategory enum value
 
         Returns:
             bool: True if error should be retried, False otherwise
         """
-        retryable_categories = {"QUOTA", "TRANSIENT"}
-        return error_category in retryable_categories
+        return error_category in {ErrorCategory.QUOTA, ErrorCategory.TRANSIENT}
 
     def execute(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute function with retry logic.
@@ -123,12 +132,12 @@ class RetryPolicy:
                 attempt += 1
 
                 # Try to categorize the error
-                error_category = "TRANSIENT"
+                error_category = ErrorCategory.TRANSIENT
                 try:
                     error_category = self._categorize_error(exc)
                 except (TypeError, AttributeError):
                     # If categorization fails (not an HttpError), treat as TRANSIENT
-                    error_category = "TRANSIENT"
+                    error_category = ErrorCategory.TRANSIENT
 
                 # Check if we should retry
                 if not self.should_retry(error_category) or attempt > self.max_retries:

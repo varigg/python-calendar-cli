@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 # --- Client Factory Functions ---
-def _create_client_dependencies(config):
+def _create_client_dependencies(config: Config) -> tuple[ServiceFactory, RetryPolicy]:
     """Create shared dependencies for API clients."""
     auth = GoogleAuth(config)
     service_factory = ServiceFactory(auth=auth)
@@ -40,13 +40,13 @@ def _create_client_dependencies(config):
     return service_factory, retry_policy
 
 
-def create_calendar_client(config):
+def create_calendar_client(config: Config) -> CalendarClient:
     """Create a composed Calendar client with retry policy."""
     service_factory, retry_policy = _create_client_dependencies(config)
     return CalendarClient(service_factory=service_factory, retry_policy=retry_policy)
 
 
-def create_gmail_client(config):
+def create_gmail_client(config: Config) -> GmailClient:
     """Create a composed Gmail client with retry policy."""
     service_factory, retry_policy = _create_client_dependencies(config)
     return GmailClient(service_factory=service_factory, retry_policy=retry_policy)
@@ -100,15 +100,21 @@ def free(config, date_range, duration, availability_start, availability_end, tim
     avail_start_str = availability_start if availability_start else config.get("AVAILABILITY_START")
     avail_end_str = availability_end if availability_end else config.get("AVAILABILITY_END")
 
+    avail_start = parse_time_option(avail_start_str)
+    avail_end = parse_time_option(avail_end_str)
+
+    # Validate time range
+    if avail_start >= avail_end:
+        raise click.UsageError(f"Availability start time ({avail_start_str}) must be before end time ({avail_end_str})")
+
     try:
         client = create_calendar_client(config)
         search_params = SearchParameters(
-            start_date=start_datetime.date(),
-            end_date=end_datetime.date(),
-            start_time=parse_time_option(avail_start_str),
-            end_time=parse_time_option(avail_end_str),
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+            availability_start=avail_start,
+            availability_end=avail_end,
             duration=duration,
-            timezone=tz,
         )
         scheduler = Scheduler(
             client=client,

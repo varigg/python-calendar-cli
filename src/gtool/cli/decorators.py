@@ -62,11 +62,11 @@ def prompt_for_config(config: object) -> None:
     # Credentials and token files
     config.data["CREDENTIALS_FILE"] = click.prompt(
         "Enter the path to your credentials file",
-        default=config.data.get("CREDENTIALS_FILE", config.data.get("CREDENTIALS_FILE")),
+        default=config.data.get("CREDENTIALS_FILE", "~/.config/caltool/credentials.json"),
     )
     config.data["TOKEN_FILE"] = click.prompt(
         "Enter the path to your token file",
-        default=config.data.get("TOKEN_FILE", config.data.get("TOKEN_FILE")),
+        default=config.data.get("TOKEN_FILE", "~/.config/caltool/token.json"),
     )
 
     # Time zone

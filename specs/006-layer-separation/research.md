@@ -8,6 +8,10 @@
 
 This document consolidates research findings for enforcing layer separation in the gtool codebase. The goal is to remove UI dependencies from infrastructure and config layers while maintaining backward compatibility.
 
+## Documentation Retention Rubric (Keep/Delete)
+
+Keep only long-lived, non-transient rationale that is not already covered in spec/plan/tasks. Delete or archive any document that: (a) hardcodes test counts, timings, or one-off bug reproductions; (b) merely repeats content already present in spec/plan/tasks; or (c) exists solely as a transient investigation log. When unique architectural rationale exists in a transient doc, migrate the rationale into spec/plan/research and remove the standalone file.
+
 ## Research Questions Resolved
 
 ### 1. Current State Analysis
@@ -16,7 +20,7 @@ This document consolidates research findings for enforcing layer separation in t
 
 **Findings**:
 
-From [analysis.md](../../../analysis.md):
+From initial layer analysis:
 
 1. **Infrastructure → CLI Dependencies**:
    - `src/gtool/infrastructure/auth.py` imports `click` (line 19)
