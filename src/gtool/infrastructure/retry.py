@@ -1,18 +1,27 @@
 """RetryPolicy for handling transient failures with exponential backoff.
 
-Manages retry logic with smart categorization using ErrorCategorizer.
+Manages retry logic with smart categorization of Google API errors.
 Separates retry policy from API client implementation.
 """
 
 import logging
 import time
-from typing import Any, Callable, Optional
+from enum import Enum
+from typing import Any, Callable
 
 import google.auth.exceptions
-
-from gtool.infrastructure.error_categorizer import ErrorCategorizer
+from googleapiclient.errors import HttpError
 
 logger = logging.getLogger(__name__)
+
+
+class ErrorCategory(str, Enum):
+    """Categories for HTTP error classification."""
+
+    AUTH = "AUTH"  # Authentication/authorization errors
+    QUOTA = "QUOTA"  # Rate limiting or quota errors
+    TRANSIENT = "TRANSIENT"  # Temporary server errors (retryable)
+    CLIENT = "CLIENT"  # Client errors (not retryable)
 
 
 class RetryPolicy:
@@ -24,11 +33,9 @@ class RetryPolicy:
     Args:
         max_retries: Maximum number of retry attempts (default: 3)
         delay: Initial delay in seconds before first retry (default: 1.0)
-        error_categorizer: ErrorCategorizer instance for error classification
 
     Example:
-        >>> categorizer = ErrorCategorizer()
-        >>> policy = RetryPolicy(max_retries=3, delay=1.0, error_categorizer=categorizer)
+        >>> policy = RetryPolicy(max_retries=3, delay=1.0)
         >>> result = policy.execute(api_call, arg1, arg2)
     """
 
@@ -36,30 +43,63 @@ class RetryPolicy:
         self,
         max_retries: int = 3,
         delay: float = 1.0,
-        error_categorizer: Optional[ErrorCategorizer] = None,
     ) -> None:
         """Initialize RetryPolicy.
 
         Args:
             max_retries: Maximum retry attempts
             delay: Initial delay between retries in seconds
-            error_categorizer: ErrorCategorizer for error classification
         """
         self.max_retries = max_retries
         self.delay = delay
-        self.error_categorizer = error_categorizer or ErrorCategorizer()
 
-    def should_retry(self, error_category: str) -> bool:
+    def _categorize_error(self, error: HttpError) -> ErrorCategory:
+        """Categorize an HTTP error from Google API.
+
+        Maps HTTP status codes to retry-relevant categories:
+        - AUTH: Authentication/authorization errors (401, 403 with auth scope)
+        - QUOTA: Rate limiting or quota errors (429, 403 with quota)
+        - TRANSIENT: Temporary server errors (5xx)
+        - CLIENT: Client errors that won't resolve with retries (4xx except above)
+
+        Args:
+            error: HttpError from googleapiclient library
+
+        Returns:
+            ErrorCategory: One of AUTH, QUOTA, TRANSIENT, or CLIENT
+
+        Raises:
+            TypeError: If error is not an HttpError instance
+        """
+        if not isinstance(error, HttpError):
+            raise TypeError(f"Expected HttpError, got {type(error)}")
+
+        status_code = error.resp.status
+
+        # Map status codes to categories
+        if status_code == 401:
+            return ErrorCategory.AUTH
+        elif status_code == 403:
+            # 403 can be quota exhausted or permission denied
+            # Treat as QUOTA for retry logic (most common case)
+            return ErrorCategory.QUOTA
+        elif status_code == 429:
+            return ErrorCategory.QUOTA
+        elif 500 <= status_code < 600:
+            return ErrorCategory.TRANSIENT
+        else:
+            return ErrorCategory.CLIENT
+
+    def should_retry(self, error_category: ErrorCategory) -> bool:
         """Determine if an error should be retried.
 
         Args:
-            error_category: Error category from ErrorCategorizer
+            error_category: ErrorCategory enum value
 
         Returns:
             bool: True if error should be retried, False otherwise
         """
-        retryable_categories = {"QUOTA", "TRANSIENT"}
-        return error_category in retryable_categories
+        return error_category in {ErrorCategory.QUOTA, ErrorCategory.TRANSIENT}
 
     def execute(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute function with retry logic.
@@ -82,22 +122,22 @@ class RetryPolicy:
             try:
                 return func(*args, **kwargs)
             except google.auth.exceptions.GoogleAuthError as exc:
-                # Wrap Google auth exceptions as AuthenticationError to keep CLI layer
-                # independent of Google auth implementation details (dependency inversion)
-                from gtool.cli.errors import AuthenticationError
+                # Wrap Google auth exceptions as AuthError
+                # CLI layer will translate this to AuthenticationError for user-facing messages
+                from gtool.infrastructure.exceptions import AuthError
 
                 logger.debug(f"Google auth error caught and wrapped: {exc}")
-                raise AuthenticationError(f"Authentication failed: {exc}") from exc
+                raise AuthError(f"Authentication failed: {exc}") from exc
             except Exception as exc:
                 attempt += 1
 
                 # Try to categorize the error
-                error_category = "TRANSIENT"
+                error_category = ErrorCategory.TRANSIENT
                 try:
-                    error_category = self.error_categorizer.categorize(exc)
+                    error_category = self._categorize_error(exc)
                 except (TypeError, AttributeError):
-                    # If categorizer fails (not an HttpError), treat as TRANSIENT
-                    error_category = "TRANSIENT"
+                    # If categorization fails (not an HttpError), treat as TRANSIENT
+                    error_category = ErrorCategory.TRANSIENT
 
                 # Check if we should retry
                 if not self.should_retry(error_category) or attempt > self.max_retries:

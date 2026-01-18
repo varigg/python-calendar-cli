@@ -208,10 +208,7 @@ def test_gmail_list_command(mock_config):
         {"id": "msg1", "threadId": "thread1", "snippet": "Test message preview"},
     ]
 
-    with (
-        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
-        patch.object(mock_config, "validate_gmail_scopes"),
-    ):
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["gmail", "list", "--limit", "5"], obj=mock_config)
 
@@ -227,10 +224,7 @@ def test_gmail_list_no_messages(mock_config):
     mock_client = Mock()
     mock_client.list_messages.return_value = []
 
-    with (
-        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
-        patch.object(mock_config, "validate_gmail_scopes"),
-    ):
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["gmail", "list"], obj=mock_config)
 
@@ -250,10 +244,7 @@ def test_gmail_show_message_command(mock_config):
         "payload": {"headers": [{"name": "Subject", "value": "Test"}]},
     }
 
-    with (
-        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
-        patch.object(mock_config, "validate_gmail_scopes"),
-    ):
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["gmail", "show-message", "msg1"], obj=mock_config)
 
@@ -269,10 +260,7 @@ def test_gmail_delete_command_with_confirm(mock_config):
     mock_client = Mock()
     mock_client.delete_message.return_value = None
 
-    with (
-        patch("gtool.cli.main.create_gmail_client", return_value=mock_client),
-        patch.object(mock_config, "validate_gmail_scopes"),
-    ):
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
         runner = CliRunner()
         result = runner.invoke(cli, ["gmail", "delete", "msg1", "--confirm"], obj=mock_config)
 
@@ -286,10 +274,7 @@ def test_gmail_delete_command_cancelled(mock_config):
     mock_config.data["GMAIL_ENABLED"] = True
     mock_config.data["SCOPES"].append("https://www.googleapis.com/auth/gmail.modify")
 
-    with (
-        patch("gtool.cli.main.create_gmail_client", return_value=Mock()),
-        patch.object(mock_config, "validate_gmail_scopes"),
-    ):
+    with patch("gtool.cli.main.create_gmail_client", return_value=Mock()):
         runner = CliRunner()
         # Simulate user typing 'n' to cancel
         result = runner.invoke(cli, ["gmail", "delete", "msg1"], obj=mock_config, input="n\n")

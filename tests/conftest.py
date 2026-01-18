@@ -38,29 +38,31 @@ def calendar_data():
 
 @pytest.fixture
 def busy_times():
-    """Sample busy time data for testing."""
+    """Sample busy time data for testing.
+
+    Returns list of (start_datetime, end_datetime) tuples matching CalendarClient.get_day_busy_times() signature.
+    Now returns timezone-aware datetime tuples (UTC).
+    """
+    from datetime import datetime
+
     return [
-        {"start": "2025-05-02T09:00:00-07:00", "end": "2025-05-02T10:00:00-07:00"},
-        {"start": "2025-05-02T14:00:00-07:00", "end": "2025-05-02T15:00:00-07:00"},
+        (datetime.fromisoformat("2025-05-02T09:00:00+00:00"), datetime.fromisoformat("2025-05-02T10:00:00+00:00")),
+        (datetime.fromisoformat("2025-05-02T14:00:00+00:00"), datetime.fromisoformat("2025-05-02T15:00:00+00:00")),
     ]
 
 
 @pytest.fixture
 def scheduler():
     """Create a configured scheduler instance for testing."""
-    availability_start = datetime.time(8, 0)
-    availability_end = datetime.time(18, 0)
-    duration_minutes = 30
-    time_zone = "America/Los_Angeles"
-    start_date = datetime.date(2025, 5, 2)
-    end_date = datetime.date(2025, 5, 3)
+    from zoneinfo import ZoneInfo
+
+    tz = ZoneInfo("America/Los_Angeles")
     search_params = SearchParameters(
-        start_date=start_date,
-        end_date=end_date,
-        start_time=availability_start,
-        end_time=availability_end,
-        duration=duration_minutes,
-        timezone=time_zone,
+        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
+        end_datetime=datetime.datetime(2025, 5, 3, 23, 59, 59, tzinfo=tz),
+        availability_start=datetime.time(8, 0),
+        availability_end=datetime.time(18, 0),
+        duration=30,
     )
     return Scheduler(
         client=Mock(),

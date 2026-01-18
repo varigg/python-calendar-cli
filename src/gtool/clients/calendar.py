@@ -105,15 +105,17 @@ class CalendarClient:
                 "orderBy": "startTime",
             }
             if start_time:
-                # Convert datetime to ISO format with Z suffix
                 if isinstance(start_time, datetime):
-                    params["timeMin"] = start_time.isoformat() + ("Z" if "+" not in start_time.isoformat() else "")
+                    # Use isoformat() directly - it handles timezone-aware datetimes correctly
+                    # Only add 'Z' for naive datetimes (assumed to be UTC)
+                    params["timeMin"] = start_time.isoformat() if start_time.tzinfo else start_time.isoformat() + "Z"
                 else:
                     params["timeMin"] = start_time
             if end_time:
-                # Convert datetime to ISO format with Z suffix
                 if isinstance(end_time, datetime):
-                    params["timeMax"] = end_time.isoformat() + ("Z" if "+" not in end_time.isoformat() else "")
+                    # Use isoformat() directly - it handles timezone-aware datetimes correctly
+                    # Only add 'Z' for naive datetimes (assumed to be UTC)
+                    params["timeMax"] = end_time.isoformat() if end_time.tzinfo else end_time.isoformat() + "Z"
                 else:
                     params["timeMax"] = end_time
             return self._service.events().list(**params).execute()
@@ -128,21 +130,23 @@ class CalendarClient:
             event["calendarId"] = calendar_id
         return events
 
-    def get_day_busy_times(self, calendar_id: str, day: date) -> List[Tuple[time, time]]:
+    def get_day_busy_times(self, calendar_id: str, day: date) -> List[Tuple[datetime, datetime]]:
         """Get busy time slots for a calendar on a specific day.
 
-        Returns list of (start_time, end_time) tuples for busy periods.
+        Returns list of (start_datetime, end_datetime) tuples for busy periods.
+        All datetimes are timezone-aware (UTC).
 
         Args:
             calendar_id: Calendar ID (e.g., "primary").
             day: Date to query for busy times.
 
         Returns:
-            List of (start_time, end_time) tuples representing busy slots.
+            List of (start_datetime, end_datetime) tuples representing busy slots.
 
         Raises:
             CLIError: If authentication fails or API call fails.
         """
+        # Query full UTC day range for the given local date
         start_time = datetime.combine(day, time.min).isoformat() + "Z"
         end_time = datetime.combine(day, time.max).isoformat() + "Z"
 
@@ -165,11 +169,11 @@ class CalendarClient:
             result = fetch_busy()
         busy_periods = result.get("calendars", {}).get(calendar_id, {}).get("busy", [])
 
-        # Convert to (time, time) tuples
+        # Return timezone-aware datetime tuples (UTC)
         return [
             (
-                datetime.fromisoformat(period["start"].replace("Z", "+00:00")).time(),
-                datetime.fromisoformat(period["end"].replace("Z", "+00:00")).time(),
+                datetime.fromisoformat(period["start"].replace("Z", "+00:00")),
+                datetime.fromisoformat(period["end"].replace("Z", "+00:00")),
             )
             for period in busy_periods
         ]

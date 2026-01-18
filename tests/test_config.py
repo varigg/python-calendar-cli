@@ -1,7 +1,7 @@
-import json
 import os
 import tempfile
-from unittest.mock import patch
+
+import pytest
 
 from gtool.config import DEFAULTS, Config
 
@@ -29,49 +29,22 @@ class TestConfig:
         assert cfg.get("TIME_ZONE") == DEFAULTS["TIME_ZONE"]
         assert cfg.get("NON_EXISTENT", "fallback") == "fallback"
 
-    def test_prompt_monkeypatch(self, monkeypatch):
-        # Simulate user input for all prompts
-        responses = iter(
-            [
-                "test_credentials.json",
-                "test_token.json",
-                "Europe/Paris",
-                "09:00",
-                "17:00",
-                "primary,work",
-                "https://www.googleapis.com/auth/calendar",
-            ]
-        )
-        monkeypatch.setattr("click.prompt", lambda *a, **k: next(responses))
-        monkeypatch.setattr("click.confirm", lambda *a, **k: False)  # Mock Gmail prompt
-        monkeypatch.setattr("click.echo", lambda *a, **k: None)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = os.path.join(tmpdir, "config.json")
-            cfg = Config(path)
-            cfg.prompt()
-            assert cfg.data["CREDENTIALS_FILE"] == "test_credentials.json"
-            assert cfg.data["TOKEN_FILE"] == "test_token.json"
-            assert cfg.data["TIME_ZONE"] == "Europe/Paris"
-            assert cfg.data["AVAILABILITY_START"] == "09:00"
-            assert cfg.data["AVAILABILITY_END"] == "17:00"
-            assert cfg.data["CALENDAR_IDS"] == ["primary", "work"]
-            # File should exist
-            assert os.path.exists(path)
-            with open(path) as f:
-                loaded = json.load(f)
-            assert loaded["TIME_ZONE"] == "Europe/Paris"
+    def test_validate_raises_config_validation_error_on_missing_keys(self, monkeypatch):
+        """Test that Config.validate raises ConfigValidationError for missing keys."""
+        from gtool.infrastructure.exceptions import ConfigValidationError
 
-    def test_config_prompt_asks_for_scopes(self):
-        """Test that Config.prompt completes successfully with scope selection."""
-        prompts = []
+        cfg = Config()
+        cfg.data = {}  # Clear all data
+        with pytest.raises(ConfigValidationError) as exc_info:
+            cfg.validate()
+        assert "Missing required config keys" in str(exc_info.value)
 
-        def fake_prompt(text, default=None):
-            prompts.append(text)
-            return default or ""
+    def test_validate_raises_error_if_scopes_not_list(self):
+        """Test that Config.validate raises ConfigValidationError if SCOPES is not a list."""
+        from gtool.infrastructure.exceptions import ConfigValidationError
 
-        config = Config()
-        with patch("click.prompt", side_effect=fake_prompt):
-            with patch("click.confirm", return_value=False):  # Mock Gmail prompt
-                config.prompt()
-        # Verify basic prompts were asked (credentials, token, timezone, etc.)
-        assert len(prompts) > 3, "Config.prompt should ask multiple configuration questions"
+        cfg = Config()
+        cfg.data["SCOPES"] = "calendar"  # String instead of list
+        with pytest.raises(ConfigValidationError) as exc_info:
+            cfg.validate()
+        assert "SCOPES must be a list" in str(exc_info.value)

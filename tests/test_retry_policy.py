@@ -1,6 +1,6 @@
 """Tests for RetryPolicy component.
 
-Tests retry logic with smart error categorization using composition pattern.
+Tests retry logic with smart error categorization.
 No @patch decorators - all dependencies injected via function arguments.
 """
 
@@ -8,7 +8,6 @@ import time
 
 import pytest
 
-from gtool.infrastructure.error_categorizer import ErrorCategorizer
 from gtool.infrastructure.retry import RetryPolicy
 
 
@@ -23,11 +22,11 @@ from gtool.infrastructure.retry import RetryPolicy
 )
 def test_retry_policy_should_retry_categories(category, expected):
     """FR-002: Verify retry behavior for each error category."""
-    policy = RetryPolicy(max_retries=3, delay=0.01, error_categorizer=ErrorCategorizer())
+    policy = RetryPolicy(max_retries=3, delay=0.01)
     assert policy.should_retry(category) is expected
 
 
-def test_retry_policy_execute_succeeds_on_retry(mock_error_categorizer):
+def test_retry_policy_execute_succeeds_on_retry():
     """FR-002, SC-002: Function failing twice then succeeding should succeed after retries."""
     call_count = 0
 
@@ -38,9 +37,7 @@ def test_retry_policy_execute_succeeds_on_retry(mock_error_categorizer):
             raise ValueError("Temporary failure")
         return "success"
 
-    policy = RetryPolicy(max_retries=3, delay=0.001, error_categorizer=mock_error_categorizer)
-    # Patch execute to handle ValueError as TRANSIENT
-    mock_error_categorizer.categorize.side_effect = lambda err: "TRANSIENT"
+    policy = RetryPolicy(max_retries=3, delay=0.001)
 
     result = policy.execute(failing_function)
 
@@ -54,8 +51,7 @@ def test_retry_policy_execute_respects_max_retries():
     def always_fails():
         raise ValueError("Persistent failure")
 
-    categorizer = ErrorCategorizer()
-    policy = RetryPolicy(max_retries=2, delay=0.001, error_categorizer=categorizer)
+    policy = RetryPolicy(max_retries=2, delay=0.001)
 
     with pytest.raises(ValueError):
         policy.execute(always_fails)
@@ -67,8 +63,7 @@ def test_retry_policy_execute_with_args_and_kwargs():
     def add_numbers(a, b, multiplier=1):
         return (a + b) * multiplier
 
-    categorizer = ErrorCategorizer()
-    policy = RetryPolicy(max_retries=1, delay=0.001, error_categorizer=categorizer)
+    policy = RetryPolicy(max_retries=1, delay=0.001)
 
     result = policy.execute(add_numbers, 2, 3, multiplier=5)
 
@@ -85,8 +80,7 @@ def test_retry_policy_exponential_backoff():
             raise ValueError("Retry me")
         return "success"
 
-    categorizer = ErrorCategorizer()
-    policy = RetryPolicy(max_retries=3, delay=0.01, error_categorizer=categorizer)
+    policy = RetryPolicy(max_retries=3, delay=0.01)
 
     result = policy.execute(track_calls)
 

@@ -4,6 +4,7 @@ import logging
 import click
 from colorama import Fore, Style
 
+from gtool.cli.decorators import prompt_for_config, translate_exceptions
 from gtool.cli.errors import CLIError, handle_cli_exception
 from gtool.cli.formatters import (
     format_calendars_table,
@@ -17,8 +18,7 @@ from gtool.config.settings import Config
 from gtool.core.models import SearchParameters
 from gtool.core.scheduler import Scheduler
 from gtool.infrastructure.auth import GoogleAuth
-from gtool.infrastructure.error_categorizer import ErrorCategorizer
-from gtool.infrastructure.exceptions import AuthError
+from gtool.infrastructure.exceptions import AuthError, ConfigValidationError
 from gtool.infrastructure.retry import RetryPolicy
 from gtool.infrastructure.service_factory import ServiceFactory
 from gtool.utils.datetime import parse_date_range, parse_time_option
@@ -32,21 +32,21 @@ logger = logging.getLogger(__name__)
 
 
 # --- Client Factory Functions ---
-def _create_client_dependencies(config):
+def _create_client_dependencies(config: Config) -> tuple[ServiceFactory, RetryPolicy]:
     """Create shared dependencies for API clients."""
     auth = GoogleAuth(config)
     service_factory = ServiceFactory(auth=auth)
-    retry_policy = RetryPolicy(max_retries=3, delay=2.0, error_categorizer=ErrorCategorizer())
+    retry_policy = RetryPolicy(max_retries=3, delay=2.0)
     return service_factory, retry_policy
 
 
-def create_calendar_client(config):
+def create_calendar_client(config: Config) -> CalendarClient:
     """Create a composed Calendar client with retry policy."""
     service_factory, retry_policy = _create_client_dependencies(config)
     return CalendarClient(service_factory=service_factory, retry_policy=retry_policy)
 
 
-def create_gmail_client(config):
+def create_gmail_client(config: Config) -> GmailClient:
     """Create a composed Gmail client with retry policy."""
     service_factory, retry_policy = _create_client_dependencies(config)
     return GmailClient(service_factory=service_factory, retry_policy=retry_policy)
@@ -61,22 +61,23 @@ def cli(ctx, debug):
     if debug:
         logger.setLevel(logging.DEBUG)
         logger.debug("Debug logging enabled")
-    # Load config once and pass as obj
-    config = Config()
-    try:
-        config.validate()
-    except (CLIError, AuthError) as e:
-        handle_cli_exception(e)
-    ctx.obj = config
+    # Load config once and pass as obj (unless already provided for testing)
+    if ctx.obj is None:
+        config = Config()
+        try:
+            config.validate()
+        except (CLIError, AuthError, ConfigValidationError) as e:
+            handle_cli_exception(e)
+        ctx.obj = config
 
 
 @cli.command("config")
 @click.pass_obj
+@translate_exceptions
 def config_cmd(config):
     """Interactively set up or edit your gtool configuration."""
     click.echo(click.style("Starting interactive config setup...", fg="cyan"))
-    config.prompt()
-    config.save()
+    prompt_for_config(config)
     click.echo(click.style("Configuration saved.", fg="green"))
 
 
@@ -88,6 +89,7 @@ def config_cmd(config):
 @click.option("--timezone", help="Time zone for the availability hours.", required=False)
 @click.option("--pretty", is_flag=True, help="Pretty print the output.")
 @click.pass_obj
+@translate_exceptions
 def free(config, date_range, duration, availability_start, availability_end, timezone, pretty):
     tz = timezone if timezone else config.get("TIME_ZONE")
     if not date_range:
@@ -98,15 +100,21 @@ def free(config, date_range, duration, availability_start, availability_end, tim
     avail_start_str = availability_start if availability_start else config.get("AVAILABILITY_START")
     avail_end_str = availability_end if availability_end else config.get("AVAILABILITY_END")
 
+    avail_start = parse_time_option(avail_start_str)
+    avail_end = parse_time_option(avail_end_str)
+
+    # Validate time range
+    if avail_start >= avail_end:
+        raise click.UsageError(f"Availability start time ({avail_start_str}) must be before end time ({avail_end_str})")
+
     try:
         client = create_calendar_client(config)
         search_params = SearchParameters(
-            start_date=start_datetime.date(),
-            end_date=end_datetime.date(),
-            start_time=parse_time_option(avail_start_str),
-            end_time=parse_time_option(avail_end_str),
+            start_datetime=start_datetime,
+            end_datetime=end_datetime,
+            availability_start=avail_start,
+            availability_end=avail_end,
             duration=duration,
-            timezone=tz,
         )
         scheduler = Scheduler(
             client=client,
@@ -140,6 +148,7 @@ def get_calendars(config):
 @cli.command(help="Show upcoming events from all calendars. Example: gtool show-events today+2")
 @click.argument("date_range", required=False)
 @click.pass_obj
+@translate_exceptions
 def show_events(config, date_range):
     """Show upcoming events from all calendars in a readable format."""
     tz = config.get("TIME_ZONE")
@@ -173,16 +182,15 @@ def show_events(config, date_range):
 @click.pass_obj
 def gmail(config):
     """Gmail management commands."""
-    try:
-        config.validate_gmail_scopes()
-    except click.UsageError as e:
-        raise CLIError(f"Gmail not enabled. Run 'gtool config' to enable Gmail access. Error: {e}")
+    if not config.has_gmail_scope("readonly"):
+        raise click.UsageError("Gmail scope not configured. Run 'gtool config' to add Gmail permissions.")
 
 
 @gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --limit 5")
 @click.option("--query", default="", help="Gmail search query (e.g., 'is:unread', 'from:user@example.com').")
 @click.option("--limit", default=10, show_default=True, help="Maximum number of messages to retrieve.")
 @click.pass_obj
+@translate_exceptions
 def gmail_list(config, query, limit):
     """List Gmail messages matching the query."""
     try:
@@ -218,6 +226,7 @@ def gmail_list(config, query, limit):
     help="Message format.",
 )
 @click.pass_obj
+@translate_exceptions
 def gmail_show_message(config, message_id, format_):
     """Show details of a specific Gmail message."""
     try:
@@ -234,6 +243,7 @@ def gmail_show_message(config, message_id, format_):
 @click.argument("message_id")
 @click.option("--confirm", is_flag=True, help="Skip confirmation prompt.")
 @click.pass_obj
+@translate_exceptions
 def gmail_delete(config, message_id, confirm):
     """Delete a specific Gmail message."""
     try:
