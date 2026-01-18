@@ -4,7 +4,6 @@
 # Import these directly from their modules when needed
 
 __all__ = [
-    "ErrorCategorizer",
     "RetryPolicy",
     "ServiceFactory",
     "GoogleAuth",

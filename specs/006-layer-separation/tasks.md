@@ -386,35 +386,35 @@ Each success criterion from spec.md maps to specific tasks:
 
 ### Consolidate ErrorCategorizer
 
-- [ ] T075 [REFACTOR] Move categorize() logic from src/gtool/infrastructure/error_categorizer.py into src/gtool/infrastructure/retry.py as \_categorize_error()
-- [ ] T076 [REFACTOR] Update RetryPolicy.**init**() to remove error_categorizer parameter
-- [ ] T077 [REFACTOR] Update RetryPolicy.execute() to call self.\_categorize_error() instead of self.error_categorizer.categorize()
-- [ ] T078 [REFACTOR] Remove error_categorizer import from src/gtool/cli/main.py \_create_client_dependencies()
-- [ ] T079 [REFACTOR] Delete src/gtool/infrastructure/error_categorizer.py file
-- [ ] T080 [REFACTOR] Update tests/test_error_categorizer.py to test RetryPolicy.\_categorize_error() or move tests to test_retry_policy.py
-- [ ] T081 [REFACTOR] Run retry tests to verify consolidation (uv run pytest tests/test_retry_policy.py -v)
+- [X] T075 [REFACTOR] Move categorize() logic from src/gtool/infrastructure/error_categorizer.py into src/gtool/infrastructure/retry.py as \_categorize_error()
+- [X] T076 [REFACTOR] Update RetryPolicy.**init**() to remove error_categorizer parameter
+- [X] T077 [REFACTOR] Update RetryPolicy.execute() to call self.\_categorize_error() instead of self.error_categorizer.categorize()
+- [X] T078 [REFACTOR] Remove error_categorizer import from src/gtool/cli/main.py \_create_client_dependencies()
+- [X] T079 [REFACTOR] Delete src/gtool/infrastructure/error_categorizer.py file
+- [X] T080 [REFACTOR] Update tests/test_error_categorizer.py to test RetryPolicy.\_categorize_error() or move tests to test_retry_policy.py
+- [X] T081 [REFACTOR] Run retry tests to verify consolidation (uv run pytest tests/test_retry_policy.py -v)
 
 ### Simplify Exception Hierarchy
 
-- [ ] T082 [P] [REFACTOR] Remove ConfigError base class from src/gtool/infrastructure/exceptions.py (only ConfigValidationError is used)
-- [ ] T083 [P] [REFACTOR] Make ConfigValidationError inherit directly from Exception in src/gtool/infrastructure/exceptions.py
-- [ ] T084 [REFACTOR] Remove ConfigError handling from src/gtool/cli/decorators.py translate_exceptions (identical to ConfigValidationError)
-- [ ] T085 [REFACTOR] Reduce docstring verbosity in src/gtool/infrastructure/exceptions.py (currently 81 lines for 3 exceptions)
-- [ ] T086 [REFACTOR] Run exception tests to verify simplification (uv run pytest tests/test_errors.py -v)
+- [X] T082 [P] [REFACTOR] Remove ConfigError base class from src/gtool/infrastructure/exceptions.py (only ConfigValidationError is used)
+- [X] T083 [P] [REFACTOR] Make ConfigValidationError inherit directly from Exception in src/gtool/infrastructure/exceptions.py
+- [X] T084 [REFACTOR] Remove ConfigError handling from src/gtool/cli/decorators.py translate_exceptions (identical to ConfigValidationError)
+- [X] T085 [REFACTOR] Reduce docstring verbosity in src/gtool/infrastructure/exceptions.py (currently 81 lines for 3 exceptions)
+- [X] T086 [REFACTOR] Run exception tests to verify simplification (uv run pytest tests/test_errors.py -v)
 
 ### Simplify OAuth Port Configuration
 
-- [ ] T087 [REFACTOR] Remove \_get_oauth_ports() method from src/gtool/infrastructure/auth.py (multi-port parsing)
-- [ ] T088 [REFACTOR] Remove \_choose_oauth_port() method from src/gtool/infrastructure/auth.py (port availability checking)
-- [ ] T089 [REFACTOR] Simplify \_run_oauth_flow() to use single hardcoded port (8401) with GTOOL_OAUTH_PORT override
-- [ ] T090 [REFACTOR] Update error messages to suggest GTOOL_OAUTH_PORT if port conflict occurs
-- [ ] T091 [REFACTOR] Update OAuth-related tests in tests/test_google_auth.py for simplified flow
-- [ ] T092 [REFACTOR] Run auth tests to verify OAuth simplification (uv run pytest tests/test_google_auth.py -v)
+- [X] T087 [REFACTOR] Remove \_get_oauth_ports() method from src/gtool/infrastructure/auth.py (multi-port parsing)
+- [X] T088 [REFACTOR] Remove \_choose_oauth_port() method from src/gtool/infrastructure/auth.py (port availability checking)
+- [X] T089 [REFACTOR] Simplify \_run_oauth_flow() to use single hardcoded port (8401) with GTOOL_OAUTH_PORT override
+- [X] T090 [REFACTOR] Update error messages to suggest GTOOL_OAUTH_PORT if port conflict occurs
+- [X] T091 [REFACTOR] Update OAuth-related tests in tests/test_google_auth.py for simplified flow
+- [X] T092 [REFACTOR] Run auth tests to verify OAuth simplification (uv run pytest tests/test_google_auth.py -v)
 
 ### Validation & Completion
 
-- [ ] T093 [REFACTOR] Run full test suite to verify all consolidations (uv run pytest -v)
-- [ ] T094 [P] [REFACTOR] Verify line count reduction with wc -l src/gtool/\*_/_.py
+- [X] T093 [REFACTOR] Run full test suite to verify all consolidations (uv run pytest -v)
+- [X] T094 [P] [REFACTOR] Verify line count reduction with wc -l src/gtool/\*_/_.py
 - [ ] T095 [P] [REFACTOR] Update tech_debt_analysis.md to mark Phase 2 items as complete
 - [ ] T096 [REFACTOR] Commit Phase 9 changes with message: "refactor: consolidate abstractions and simplify complexity (Phase 9)"
 

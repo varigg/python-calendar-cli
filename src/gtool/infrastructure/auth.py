@@ -14,7 +14,6 @@ Key Responsibilities:
 import json
 import logging
 import os
-import socket
 from typing import Optional, cast
 
 from google.auth.transport.requests import Request
@@ -264,9 +263,8 @@ class GoogleAuth:
 
             try:
                 host = self._get_oauth_host()
-                ports = self._get_oauth_ports()
-                chosen_port = self._choose_oauth_port(host, ports)
-                redirect_uri = f"http://{host}:{chosen_port}/"
+                port = self._get_oauth_port()
+                redirect_uri = f"http://{host}:{port}/"
                 attempted_redirect_uri = redirect_uri
 
                 logger.debug(
@@ -275,7 +273,7 @@ class GoogleAuth:
                             "component": "GoogleAuth",
                             "event": "oauth:local_server_config",
                             "host": host,
-                            "port": chosen_port,
+                            "port": port,
                             "redirect_uri": redirect_uri,
                             "scopes": self.scopes,
                         }
@@ -284,7 +282,7 @@ class GoogleAuth:
 
                 # Ensure the redirect URI is deterministic and matches pre-registered URIs in Google Cloud.
                 flow.redirect_uri = redirect_uri
-                creds_any = flow.run_local_server(host=host, port=chosen_port, open_browser=True)
+                creds_any = flow.run_local_server(host=host, port=port, open_browser=True)
                 logger.debug(json.dumps({"component": "GoogleAuth", "event": "oauth:success", "mode": "local_server"}))
                 return cast(Credentials, creds_any)
             except AuthError:
@@ -305,7 +303,7 @@ class GoogleAuth:
                         "- Close all in-progress OAuth tabs/windows\n"
                         "- Ensure only one 'gtool' process is running\n"
                         "- Rerun the command and use the newly printed URL exactly once (prefer an incognito/private window)\n"
-                        "- If it still happens, switch to a different registered port via GTOOL_OAUTH_PORTS"
+                        "- If it still happens, switch to a different registered port via GTOOL_OAUTH_PORT"
                     )
 
                 if "redirect_uri_mismatch" in str(local_error):
@@ -313,7 +311,7 @@ class GoogleAuth:
                         "OAuth failed: redirect_uri_mismatch\n"
                         f"Attempted redirect URI: {attempted_redirect_uri or '<unknown>'}\n"
                         "Add this exact URI to Authorized redirect URIs for your OAuth client OR adjust "
-                        "GTOOL_OAUTH_PORTS to a registered port."
+                        "GTOOL_OAUTH_PORT to a registered port."
                     )
 
                 if self._oauth_client_type == "web":
@@ -362,80 +360,22 @@ class GoogleAuth:
         """Return the host used for the OAuth local server redirect."""
         return os.environ.get("GTOOL_OAUTH_HOST", "localhost").strip() or "localhost"
 
-    def _get_oauth_ports(self) -> list[int]:
-        """Return the list of allowed OAuth redirect ports.
+    def _get_oauth_port(self) -> int:
+        """Return the OAuth redirect port.
 
-        The ports must be pre-registered in Google Cloud Console for web OAuth clients.
+        Defaults to 8401. Can be overridden with GTOOL_OAUTH_PORT environment variable.
+        The port must be pre-registered in Google Cloud Console for web OAuth clients.
         """
-        default_ports = [8401]
-        raw = os.environ.get("GTOOL_OAUTH_PORTS")
+        default_port = 8401
+        raw = os.environ.get("GTOOL_OAUTH_PORT")
         if not raw:
-            return default_ports
+            return default_port
 
-        ports: list[int] = []
-        for part in raw.split(","):
-            part = part.strip()
-            if not part:
-                continue
-            try:
-                ports.append(int(part))
-            except ValueError:
-                continue
-        return ports or default_ports
-
-    def _choose_oauth_port(self, host: str, ports: list[int]) -> int:
-        """Pick the first available port from the allowlist by attempting to bind."""
-        last_error: Optional[str] = None
-        for port in ports:
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                try:
-                    sock.bind((host, port))
-                finally:
-                    sock.close()
-
-                logger.debug(
-                    json.dumps(
-                        {
-                            "component": "GoogleAuth",
-                            "event": "oauth:port_available",
-                            "host": host,
-                            "port": port,
-                        }
-                    )
-                )
-                return port
-            except OSError as e:
-                last_error = str(e)
-                logger.debug(
-                    json.dumps(
-                        {
-                            "component": "GoogleAuth",
-                            "event": "oauth:port_in_use",
-                            "host": host,
-                            "port": port,
-                            "error": str(e),
-                        }
-                    )
-                )
-                continue
-
-        logger.error(
-            json.dumps(
-                {
-                    "component": "GoogleAuth",
-                    "event": "oauth:no_available_ports",
-                    "host": host,
-                    "ports": ports,
-                    "error": last_error,
-                }
-            )
-        )
-        raise AuthError(
-            "No available OAuth redirect ports found.\n"
-            "Free a port or change GTOOL_OAUTH_PORTS to a different allowlist.\n"
-            "Also ensure the matching redirect URIs (http://<host>:<port>/) are registered in Google Cloud Console."
-        )
+        try:
+            return int(raw.strip())
+        except ValueError:
+            logger.warning(f"Invalid GTOOL_OAUTH_PORT value '{raw}', using default {default_port}")
+            return default_port
 
     def _create_oauth_flow(self) -> InstalledAppFlow:
         """Create an OAuth flow from either 'installed' or 'web' client secrets JSON."""

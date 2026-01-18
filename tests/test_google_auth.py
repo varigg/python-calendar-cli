@@ -120,11 +120,8 @@ class TestGoogleAuthGetCredentials:
 
         # Test
         auth = GoogleAuth(mock_config)
-        # Avoid real socket probing in unit test.
-        with (
-            patch.object(GoogleAuth, "_get_oauth_ports", return_value=[8401]),
-            patch.object(GoogleAuth, "_choose_oauth_port", return_value=8401),
-        ):
+        # Avoid real socket probing in unit test - just patch _get_oauth_port
+        with patch.object(GoogleAuth, "_get_oauth_port", return_value=8401):
             result = auth.get_credentials()
         # Verify OAuth flow was initiated
         assert result is not None

@@ -18,7 +18,6 @@ from gtool.config.settings import Config
 from gtool.core.models import SearchParameters
 from gtool.core.scheduler import Scheduler
 from gtool.infrastructure.auth import GoogleAuth
-from gtool.infrastructure.error_categorizer import ErrorCategorizer
 from gtool.infrastructure.exceptions import AuthError, ConfigValidationError
 from gtool.infrastructure.retry import RetryPolicy
 from gtool.infrastructure.service_factory import ServiceFactory
@@ -37,7 +36,7 @@ def _create_client_dependencies(config):
     """Create shared dependencies for API clients."""
     auth = GoogleAuth(config)
     service_factory = ServiceFactory(auth=auth)
-    retry_policy = RetryPolicy(max_retries=3, delay=2.0, error_categorizer=ErrorCategorizer())
+    retry_policy = RetryPolicy(max_retries=3, delay=2.0)
     return service_factory, retry_policy
 
 

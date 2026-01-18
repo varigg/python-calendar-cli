@@ -11,11 +11,7 @@ from typing import Callable
 import click
 
 from gtool.cli.errors import AuthenticationError
-from gtool.infrastructure.exceptions import (
-    AuthError,
-    ConfigError,
-    ConfigValidationError,
-)
+from gtool.infrastructure.exceptions import AuthError, ConfigValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +22,6 @@ def translate_exceptions(func: Callable) -> Callable:
     Translation rules:
     - AuthError → AuthenticationError
     - ConfigValidationError → click.UsageError
-    - ConfigError → click.UsageError
 
     Usage:
         @click.command()
@@ -41,9 +36,6 @@ def translate_exceptions(func: Callable) -> Callable:
             return func(*args, **kwargs)
         except ConfigValidationError as e:
             logger.debug(f"ConfigValidationError caught: {e}")
-            raise click.UsageError(str(e)) from e
-        except ConfigError as e:
-            logger.debug(f"ConfigError caught: {e}")
             raise click.UsageError(str(e)) from e
         except AuthError as e:
             logger.debug(f"AuthError caught: {e}")
