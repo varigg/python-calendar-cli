@@ -68,24 +68,35 @@ The tool is designed for productivity, automation, and integration into develope
 
 ### Calendar
 
-- `calendarcli free today+1 --duration 30 --pretty` - Find free time slots
-- `calendarcli get-calendars` - List all accessible calendars
-- `calendarcli show-events thursday+2` - Show upcoming events
-- `calendarcli config` - Interactive configuration setup
+- `gtool free today+1 --duration 30` - Find free time slots
+- `gtool get-calendars` - List all accessible calendars
+- `gtool show-events thursday+2` - Show upcoming events
+- `gtool config` - Interactive configuration setup
 
 ### Gmail
 
-- `calendarcli gmail list --query "is:unread" --limit 5` - List unread messages
-- `calendarcli gmail list --query "from:user@example.com"` - Search messages
-- `calendarcli gmail show-message <message_id>` - Show full message details
-- `calendarcli gmail show-message <message_id> --format minimal` - Show minimal format
-- `calendarcli gmail delete <message_id>` - Delete message (with confirmation)
-- `calendarcli gmail delete <message_id> --confirm` - Delete without confirmation
+- `gtool gmail list` - List messages with subject display (default: 10 from INBOX)
+- `gtool gmail list --query "is:unread" --count 5` - List unread messages
+- `gtool gmail list --label "Work"` - Filter by label
+- `gtool gmail list --label "Work" --query "is:unread"` - Combine filters
+- `gtool gmail list --query "from:user@example.com"` - Search by sender
+- `gtool gmail show-message <message_id>` - Show full message details
+- `gtool gmail show-message <message_id> --format minimal` - Show minimal format
+- `gtool gmail delete <message_id>` - Delete message (with confirmation)
+- `gtool gmail delete <message_id> --confirm` - Delete without confirmation
+
+### Gmail List Features
+
+- **Subject Display**: Messages shown in table with subjects, IDs, and previews
+- **Label Filtering**: `--label` option to filter by Gmail labels
+- **Batch Control**: `--count` option to specify number of messages (default: 10)
+- **Search Queries**: Full Gmail search syntax support via `--query`
+- **Output Formats**: `--format table` (default) or `--format simple` (legacy)
 
 ### Date Range Argument
 
 - Accepts intuitive strings: `today`, `today+N`, `tomorrow`, `monday+N`, etc.
-- Example: `calendarcli free today+2` finds free slots for today and the next two days.
+- Example: `gtool free today+2` finds free slots for today and the next two days.
 
 ## Coding Guidelines
 
