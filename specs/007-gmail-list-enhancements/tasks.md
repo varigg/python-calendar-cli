@@ -102,15 +102,15 @@ These tasks prepare the codebase for feature implementation.
 
 ### Implementation Tasks
 
-- [ ] T028 Add `count` parameter handling to `list_messages()` in `src/gtool/clients/gmail.py` (default 10; no offset)
-- [ ] T029 Add `--count` option to `gmail list` command in `src/gtool/cli/main.py`
-- [ ] T030 Add validation for count >= 0 in `src/gtool/cli/main.py` (usage error if negative)
+- [X] T028 Add `count` parameter handling to `list_messages()` in `src/gtool/clients/gmail.py` (default 10; no offset)
+- [X] T029 Add `--count` option to `gmail list` command in `src/gtool/cli/main.py`
+- [X] T030 Add validation for count >= 0 in `src/gtool/cli/main.py` (usage error if negative)
 
 ### Testing Tasks
 
-- [ ] T031 Unit test: count parameter limits results in `tests/test_gmail_client.py`
-- [ ] T032 Unit test: count=0 returns empty result in `tests/test_gmail_client.py`
-- [ ] T033 Integration test: CLI `--count 20` returns 20 emails in `tests/test_cli.py`
+- [X] T031 Unit test: count parameter limits results in `tests/test_gmail_client.py`
+- [X] T032 Unit test: count=0 returns empty result in `tests/test_gmail_client.py`
+- [X] T033 Integration test: CLI `--count 20` returns 20 emails in `tests/test_cli.py`
 
 ## Phase 5: (Removed) Pagination User Story
 

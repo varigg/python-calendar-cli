@@ -374,3 +374,103 @@ def test_gmail_list_unicode_subjects(mock_config):
     assert result.exit_code == 0
     # Unicode should be in output (may be encoded depending on terminal)
     assert "Party Invitation" in result.output
+
+
+# ============================================================================
+# Phase 5 Tests: Batch Size Controls
+# ============================================================================
+
+
+def test_gmail_list_count_parameter(mock_config):
+    """T031 [Phase 5]: Test --count parameter limits results."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {"id": f"msg{i}", "threadId": f"thread{i}", "subject": f"Subject {i}", "snippet": f"Preview {i}"}
+        for i in range(20)
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--count", "20"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Verify list_messages was called with limit=20
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["limit"] == 20
+
+
+def test_gmail_list_count_zero(mock_config):
+    """T032 [Phase 5]: Test count=0 returns empty result."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = []
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--count", "0"], obj=mock_config)
+
+    assert result.exit_code == 0
+    assert "No messages found" in result.output
+    # Verify list_messages was called with limit=0
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["limit"] == 0
+
+
+def test_gmail_list_count_negative_validation(mock_config):
+    """T030 [Phase 5]: Test negative count raises validation error."""
+    with patch("gtool.cli.main.create_gmail_client"):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--count", "-5"], obj=mock_config)
+
+    assert result.exit_code != 0
+    assert "count must be non-negative" in result.output
+
+
+def test_gmail_list_limit_backward_compat(mock_config):
+    """T033 [Phase 5]: Test --limit still works for backward compatibility."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {"id": f"msg{i}", "threadId": f"thread{i}", "subject": f"Subject {i}", "snippet": f"Preview {i}"}
+        for i in range(15)
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--limit", "15"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Verify list_messages was called with limit=15
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["limit"] == 15
+
+
+def test_gmail_list_count_overrides_limit(mock_config):
+    """T031 [Phase 5]: Test --count takes precedence over --limit."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = []
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--count", "5", "--limit", "10"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Verify count (5) was used, not limit (10)
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["limit"] == 5
+
+
+def test_gmail_list_default_count(mock_config):
+    """T031 [Phase 5]: Test default count is 10 when no parameters provided."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = []
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Verify default limit=10 was used
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["limit"] == 10
