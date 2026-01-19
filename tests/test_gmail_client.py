@@ -83,19 +83,19 @@ def test_gmail_client_delete_message(mock_google_service):
 
 
 def test_extract_subject_from_headers_normal(gmail_message_with_subject):
-    """T010 [US1]: Extract subject from message with normal subject header."""
+    """Extract subject from message with normal subject header."""
     subject = extract_subject_from_headers(gmail_message_with_subject)
     assert subject == "Test Email Subject"
 
 
 def test_extract_subject_from_headers_blank(gmail_message_no_subject):
-    """T011 [US1]: Handle blank/missing subject as (No Subject)."""
+    """Handle blank or missing subject by returning placeholder text."""
     subject = extract_subject_from_headers(gmail_message_no_subject)
     assert subject == "(No Subject)"
 
 
 def test_extract_subject_from_headers_unicode(gmail_message_unicode_subject):
-    """T012 [US1]: Handle Unicode, emoji, and special characters in subject."""
+    """Handle Unicode characters, emoji, and special characters in subject."""
     subject = extract_subject_from_headers(gmail_message_unicode_subject)
     assert subject == "🎉 Test Email with émoji & spëcial chars!"
     # Verify Unicode characters are preserved
@@ -105,7 +105,7 @@ def test_extract_subject_from_headers_unicode(gmail_message_unicode_subject):
 
 
 def test_extract_subject_from_headers_long_subject(gmail_message_long_subject):
-    """T013 [US1]: Extract long subject without modification (truncation happens at display layer)."""
+    """Extract long subject without modification (truncation happens at display layer)."""
     subject = extract_subject_from_headers(gmail_message_long_subject)
     # Subject extraction should not truncate - that's the formatter's job
     assert len(subject) == 150
@@ -113,7 +113,7 @@ def test_extract_subject_from_headers_long_subject(gmail_message_long_subject):
 
 
 def test_gmail_list_includes_subjects(mock_google_service, gmail_message_with_subject, gmail_message_unicode_subject):
-    """T014 [US1]: Integration test - list_messages returns messages with subjects."""
+    """Verify list_messages enriches results with subject lines."""
     # Mock list() API call
     mock_google_service.users.return_value.messages.return_value.list.return_value.execute.return_value = {
         "messages": [

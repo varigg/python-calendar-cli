@@ -100,9 +100,7 @@ class GmailClient:
         if self._service is None and self._service_factory is not None:
             self._service = self._service_factory.build_service("gmail", "v1")
 
-    def list_messages(
-        self, query: str = "", label: Optional[str] = None, limit: int = 10, max_results: int = None
-    ) -> List[dict]:
+    def list_messages(self, query: str = "", label: Optional[str] = None, limit: int = 10) -> List[dict]:
         """List Gmail messages matching a query with optional label filtering.
 
         Returns a list of message metadata matching the specified query and/or label.
@@ -123,11 +121,16 @@ class GmailClient:
             label="Work", query="is:unread" → "label:Work is:unread"
             no parameters → "label:INBOX"
 
+        Note:
+            This method makes N+1 API calls (1 list + N get calls) to fetch message
+            headers including subjects. This is acceptable for small limits (default 10)
+            but may be slow for large result sets. Consider using Gmail's batch API
+            for bulk operations in the future.
+
         Args:
             query: Gmail search query (default: "").
             label: Single label filter (default: None). Converted to label:X syntax.
-            limit: Maximum number of messages to return (new parameter).
-            max_results: Maximum number of messages to return (old parameter, for compatibility).
+            limit: Maximum number of messages to return.
 
         Returns:
             List of message dictionaries with id, threadId, snippet, and subject.
@@ -144,14 +147,11 @@ class GmailClient:
             >>> # Default INBOX
             >>> inbox = client.list_messages()
         """
-        # Support both old (max_results) and new (limit) parameter names
-        actual_limit = max_results if max_results is not None else limit
-
         # T016, T017 [US2]: Build query with label filtering
         final_query = self._build_query_with_label(query, label)
 
         def fetch_messages():
-            return self._service.users().messages().list(userId="me", q=final_query, maxResults=actual_limit).execute()
+            return self._service.users().messages().list(userId="me", q=final_query, maxResults=limit).execute()
 
         if self._retry_policy is not None:
             result = self._retry_policy.execute(fetch_messages)
@@ -161,17 +161,18 @@ class GmailClient:
         messages = result.get("messages", [])
 
         # Enrich messages with subject lines (T006 [US1])
-        # Fetch full message metadata to get headers including subject
+        # Note: This makes N additional API calls. See docstring for trade-off discussion.
         enriched_messages = []
         for msg in messages:
             msg_id = msg.get("id")
             if msg_id:
                 # Fetch message with metadata format to get headers
-                def fetch_full_message():
+                # Use default argument to capture msg_id by value, not reference
+                def fetch_full_message(message_id=msg_id):
                     return (
                         self._service.users()
                         .messages()
-                        .get(userId="me", id=msg_id, format="metadata", metadataHeaders=["Subject", "From", "Date"])
+                        .get(userId="me", id=message_id, format="metadata", metadataHeaders=["Subject", "From", "Date"])
                         .execute()
                     )
 
@@ -198,16 +199,18 @@ class GmailClient:
         return enriched_messages
 
     def _build_query_with_label(self, query: str, label: Optional[str]) -> str:
-        """Build Gmail query with label filtering.
+        """Build Gmail search query incorporating label filter.
 
-        Implements label-to-query conversion and default INBOX behavior (T017, T019 [US2]).
+        Converts a label name to Gmail query syntax and combines it with any
+        existing query. When neither label nor query is provided, defaults to
+        searching the INBOX.
 
         Args:
             query: User-provided search query
-            label: Optional label filter
+            label: Optional label name to filter by
 
         Returns:
-            Final query string with label filter applied
+            Complete Gmail search query string
 
         Example:
             >>> client._build_query_with_label("", "Work")
@@ -217,7 +220,7 @@ class GmailClient:
             >>> client._build_query_with_label("", None)
             'label:INBOX'
         """
-        # T017 [US2]: Convert label to query syntax
+        # Convert label to query syntax
         if label:
             label_query = f"label:{label}"
             # Combine with existing query if present
@@ -225,7 +228,7 @@ class GmailClient:
                 return f"{label_query} {query}"
             return label_query
 
-        # T019 [US2]: Default to INBOX if no label or query specified
+        # Default to INBOX if no label or query specified
         if not query:
             return "label:INBOX"
 

@@ -182,26 +182,3 @@ def validate_count_param(count: int) -> int:
     if count < 0:
         raise click.UsageError(f"count must be non-negative (got: {count})")
     return count
-
-
-def validate_offset_param(offset: int) -> int:
-    """Validate offset parameter for Gmail list operations.
-
-    Args:
-        offset: Starting position in message list (0-indexed)
-
-    Returns:
-        Validated offset value
-
-    Raises:
-        click.UsageError: If offset is negative
-
-    Example:
-        >>> validate_offset_param(20)
-        20
-        >>> validate_offset_param(-5)
-        UsageError: offset must be non-negative (got: -5)
-    """
-    if offset < 0:
-        raise click.UsageError(f"offset must be non-negative (got: {offset})")
-    return offset

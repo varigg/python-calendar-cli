@@ -10,6 +10,11 @@ from tabulate import tabulate
 
 from gtool.utils.datetime import format_event_time, get_event_date
 
+# Column width constants for Gmail list table formatting
+SUBJECT_MAX_LENGTH = 50
+SNIPPET_MAX_LENGTH = 60
+SUBJECT_TRUNCATE_DEFAULT = 80
+
 
 def format_slots_table(free_slots: list) -> str:
     """Return a formatted table of free slots as a string."""
@@ -139,12 +144,12 @@ def print_events_grouped_by_date(events, calendar_colors, calendar_names, timezo
 # ============================================================================
 
 
-def truncate_subject(subject: str, max_length: int = 80) -> str:
+def truncate_subject(subject: str, max_length: int = SUBJECT_TRUNCATE_DEFAULT) -> str:
     """Truncate subject line to fit terminal width.
 
     Args:
         subject: Email subject line
-        max_length: Maximum length before truncation (default: 80)
+        max_length: Maximum length before truncation (default: SUBJECT_TRUNCATE_DEFAULT)
 
     Returns:
         Truncated subject with "..." suffix if too long
@@ -193,8 +198,8 @@ def format_gmail_list_table(messages: list, include_subject: bool = True) -> str
         subject = msg.get("subject", "(No Subject)")
 
         # Truncate subject and snippet for display
-        subject_display = truncate_subject(subject, max_length=50)
-        snippet_display = truncate_subject(snippet, max_length=60)
+        subject_display = truncate_subject(subject, max_length=SUBJECT_MAX_LENGTH)
+        snippet_display = truncate_subject(snippet, max_length=SNIPPET_MAX_LENGTH)
 
         if include_subject:
             table_data.append(

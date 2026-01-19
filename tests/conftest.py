@@ -9,15 +9,24 @@ from gtool.config.settings import Config
 
 @pytest.fixture
 def mock_config(tmp_path):
-    """Create a mock config with temporary file paths for testing."""
+    """Create a mock config with temporary file paths for testing.
+
+    Note: Gmail is enabled by default with readonly scope to support
+    Gmail command tests without individual setup. Tests requiring
+    gmail.modify scope should add it explicitly.
+    """
     config_data = {
         "CREDENTIALS_FILE": str(tmp_path / "credentials.json"),
         "TOKEN_FILE": str(tmp_path / "token.json"),
-        "SCOPES": ["scope", "https://www.googleapis.com/auth/gmail.readonly"],
+        "SCOPES": [
+            "https://www.googleapis.com/auth/calendar",
+            "https://www.googleapis.com/auth/gmail.readonly",
+        ],
         "CALENDAR_IDS": ["primary"],
         "AVAILABILITY_START": "08:00",
         "AVAILABILITY_END": "18:00",
         "TIME_ZONE": "America/Los_Angeles",
+        "GMAIL_ENABLED": True,
     }
     config = Config()
     config.data = config_data
