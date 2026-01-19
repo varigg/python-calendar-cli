@@ -189,10 +189,19 @@ def gmail(config):
 @gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --limit 5")
 @click.option("--query", default="", help="Gmail search query (e.g., 'is:unread', 'from:user@example.com').")
 @click.option("--limit", default=10, show_default=True, help="Maximum number of messages to retrieve.")
+@click.option("--format", "format_", default="table", type=click.Choice(["table", "simple"]), help="Output format.")
 @click.pass_obj
 @translate_exceptions
-def gmail_list(config, query, limit):
-    """List Gmail messages matching the query."""
+def gmail_list(config, query, limit, format_):
+    """List Gmail messages matching the query with subject display.
+
+    Displays messages in a formatted table including subject lines for quick
+    identification. Use --format simple for legacy output without subjects.
+
+    Examples:
+        gtool gmail list --query "is:unread" --limit 5
+        gtool gmail list --query "from:user@example.com" --format simple
+    """
     try:
         client = create_gmail_client(config)
         messages = client.list_messages(query=query, limit=limit)
@@ -201,15 +210,24 @@ def gmail_list(config, query, limit):
             click.echo(click.style("No messages found.", fg="yellow"))
             return
 
-        click.echo(click.style(f"\nFound {len(messages)} message(s):", fg="cyan"))
-        for i, msg in enumerate(messages, 1):
-            msg_id = msg.get("id", "N/A")
-            snippet = msg.get("snippet", "(no preview)")
-            thread_id = msg.get("threadId", "N/A")
-            click.echo(f"{i}. ID: {msg_id}")
-            click.echo(f"   Thread: {thread_id}")
-            click.echo(f"   Preview: {snippet[:80]}...")
-            click.echo("")
+        # Use new table formatter with subject display (T007, T009 [US1])
+        if format_ == "table":
+            from gtool.cli.formatters import format_gmail_list_table
+
+            click.echo(click.style(f"\nFound {len(messages)} message(s):", fg="cyan"))
+            table = format_gmail_list_table(messages, include_subject=True)
+            click.echo(table)
+        else:
+            # Legacy simple format for backward compatibility
+            click.echo(click.style(f"\nFound {len(messages)} message(s):", fg="cyan"))
+            for i, msg in enumerate(messages, 1):
+                msg_id = msg.get("id", "N/A")
+                snippet = msg.get("snippet", "(no preview)")
+                thread_id = msg.get("threadId", "N/A")
+                click.echo(f"{i}. ID: {msg_id}")
+                click.echo(f"   Thread: {thread_id}")
+                click.echo(f"   Preview: {snippet[:80]}...")
+                click.echo("")
     except CLIError as e:
         handle_cli_exception(e)
 

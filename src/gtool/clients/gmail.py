@@ -10,6 +10,57 @@ from gtool.infrastructure.retry import RetryPolicy
 from gtool.infrastructure.service_factory import ServiceFactory
 
 
+def extract_subject_from_headers(message: dict) -> str:
+    """Extract subject line from Gmail message headers.
+
+    Extracts the Subject header from a Gmail message payload. If the subject
+    is missing or blank, returns "(No Subject)" as per FR-006.
+
+    Args:
+        message: Gmail message dict with 'payload' containing 'headers'
+
+    Returns:
+        Subject string, or "(No Subject)" if missing/blank
+
+    Raises:
+        KeyError: If message structure is invalid (missing 'payload')
+
+    Example:
+        >>> msg = {
+        ...     "id": "123",
+        ...     "payload": {
+        ...         "headers": [
+        ...             {"name": "Subject", "value": "Hello World"},
+        ...             {"name": "From", "value": "user@example.com"}
+        ...         ]
+        ...     }
+        ... }
+        >>> extract_subject_from_headers(msg)
+        'Hello World'
+
+        >>> msg_no_subject = {
+        ...     "id": "456",
+        ...     "payload": {
+        ...         "headers": [{"name": "From", "value": "user@example.com"}]
+        ...     }
+        ... }
+        >>> extract_subject_from_headers(msg_no_subject)
+        '(No Subject)'
+    """
+    # Get headers from message payload
+    headers = message.get("payload", {}).get("headers", [])
+
+    # Find Subject header
+    for header in headers:
+        if header.get("name", "").lower() == "subject":
+            subject = header.get("value", "").strip()
+            # Return "(No Subject)" if blank (FR-006)
+            return subject if subject else "(No Subject)"
+
+    # No Subject header found
+    return "(No Subject)"
+
+
 class GmailClient:
     """Gmail API client using composition pattern.
 
@@ -53,6 +104,8 @@ class GmailClient:
         """List Gmail messages matching a query.
 
         Returns a list of message metadata matching the specified query.
+        Each message includes id, threadId, snippet, and subject (extracted from headers).
+
         Common query examples:
         - "is:unread" - unread messages
         - "from:user@example.com" - messages from specific sender
@@ -64,7 +117,7 @@ class GmailClient:
             max_results: Maximum number of messages to return (old parameter, for compatibility).
 
         Returns:
-            List of message dictionaries with id, threadId, etc.
+            List of message dictionaries with id, threadId, snippet, and subject.
 
         Raises:
             CLIError: If Gmail scope missing, authentication fails, or API call fails.
@@ -73,7 +126,7 @@ class GmailClient:
             >>> client = GmailClient(service_factory=factory)
             >>> unread = client.list_messages("is:unread", limit=20)
             >>> for msg in unread:
-            ...     print(msg['id'])
+            ...     print(f"{msg['subject']}: {msg['snippet']}")
         """
         # Support both old (max_results) and new (limit) parameter names
         actual_limit = max_results if max_results is not None else limit
@@ -85,7 +138,45 @@ class GmailClient:
             result = self._retry_policy.execute(fetch_messages)
         else:
             result = fetch_messages()
-        return result.get("messages", [])
+
+        messages = result.get("messages", [])
+
+        # Enrich messages with subject lines (T006 [US1])
+        # Fetch full message metadata to get headers including subject
+        enriched_messages = []
+        for msg in messages:
+            msg_id = msg.get("id")
+            if msg_id:
+                # Fetch message with metadata format to get headers
+                def fetch_full_message():
+                    return (
+                        self._service.users()
+                        .messages()
+                        .get(userId="me", id=msg_id, format="metadata", metadataHeaders=["Subject", "From", "Date"])
+                        .execute()
+                    )
+
+                if self._retry_policy is not None:
+                    full_msg = self._retry_policy.execute(fetch_full_message)
+                else:
+                    full_msg = fetch_full_message()
+
+                # Extract subject from headers
+                subject = extract_subject_from_headers(full_msg)
+
+                # Merge subject into message dict
+                enriched_msg = {**msg, "subject": subject}
+
+                # Also include snippet if available from full message
+                if "snippet" in full_msg:
+                    enriched_msg["snippet"] = full_msg["snippet"]
+
+                enriched_messages.append(enriched_msg)
+            else:
+                # Fallback if message has no ID
+                enriched_messages.append({**msg, "subject": "(No Subject)"})
+
+        return enriched_messages
 
     def get_message(self, message_id: str, format_: str = "full") -> dict:
         """Get full message details including headers and body.

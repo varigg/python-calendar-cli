@@ -154,3 +154,54 @@ def _prompt_for_scopes(config: object) -> None:
         # Remove Gmail scopes if disabled
         scopes = config.data.get("SCOPES", ["https://www.googleapis.com/auth/calendar"])
         config.data["SCOPES"] = [s for s in scopes if "gmail" not in s]
+
+
+# ============================================================================
+# Gmail List Parameter Validation (Feature 007)
+# ============================================================================
+
+
+def validate_count_param(count: int) -> int:
+    """Validate count parameter for Gmail list operations.
+
+    Args:
+        count: Number of messages to retrieve
+
+    Returns:
+        Validated count value
+
+    Raises:
+        click.UsageError: If count is negative
+
+    Example:
+        >>> validate_count_param(10)
+        10
+        >>> validate_count_param(-1)
+        UsageError: count must be non-negative (got: -1)
+    """
+    if count < 0:
+        raise click.UsageError(f"count must be non-negative (got: {count})")
+    return count
+
+
+def validate_offset_param(offset: int) -> int:
+    """Validate offset parameter for Gmail list operations.
+
+    Args:
+        offset: Starting position in message list (0-indexed)
+
+    Returns:
+        Validated offset value
+
+    Raises:
+        click.UsageError: If offset is negative
+
+    Example:
+        >>> validate_offset_param(20)
+        20
+        >>> validate_offset_param(-5)
+        UsageError: offset must be non-negative (got: -5)
+    """
+    if offset < 0:
+        raise click.UsageError(f"offset must be non-negative (got: {offset})")
+    return offset

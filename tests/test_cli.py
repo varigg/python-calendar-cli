@@ -281,3 +281,96 @@ def test_gmail_delete_command_cancelled(mock_config):
 
     assert result.exit_code == 0
     assert "cancelled" in result.output.lower()
+
+
+# ============================================================================
+# Phase 3 Tests: User Story 1 - View Email Titles in CLI
+# ============================================================================
+
+
+def test_gmail_list_displays_subjects(mock_config):
+    """T015 [US1]: Integration test - CLI displays subjects in table format."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {
+            "id": "msg1",
+            "threadId": "thread1",
+            "subject": "Important Meeting Tomorrow",
+            "snippet": "Don't forget about the meeting...",
+        },
+        {
+            "id": "msg2",
+            "threadId": "thread2",
+            "subject": "Invoice #12345",
+            "snippet": "Your invoice is ready...",
+        },
+        {
+            "id": "msg3",
+            "threadId": "thread3",
+            "subject": "(No Subject)",
+            "snippet": "Message without subject...",
+        },
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--limit", "3"], obj=mock_config)
+
+    assert result.exit_code == 0
+    output = clean_cli_output(result.output)
+
+    # Verify subjects are displayed
+    assert "Important Meeting Tomorrow" in output
+    assert "Invoice #12345" in output
+    assert "(No Subject)" in output
+
+    # Verify table structure (headers)
+    assert "Subject" in output
+    assert "Preview" in output
+    assert "Message ID" in output
+
+
+def test_gmail_list_simple_format(mock_config):
+    """T015 [US1]: Test simple format option for backward compatibility."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {
+            "id": "msg1",
+            "threadId": "thread1",
+            "subject": "Test Subject",
+            "snippet": "Test preview...",
+        },
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--format", "simple"], obj=mock_config)
+
+    assert result.exit_code == 0
+    output = clean_cli_output(result.output)
+
+    # Simple format should use legacy output (no table)
+    assert "ID: msg1" in output
+    assert "Thread: thread1" in output
+    assert "Preview:" in output
+
+
+def test_gmail_list_unicode_subjects(mock_config):
+    """T015 [US1]: Test CLI handles Unicode and emoji in subjects."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {
+            "id": "msg1",
+            "threadId": "thread1",
+            "subject": "🎉 Party Invitation! émoji test",
+            "snippet": "You're invited...",
+        },
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Unicode should be in output (may be encoded depending on terminal)
+    assert "Party Invitation" in result.output

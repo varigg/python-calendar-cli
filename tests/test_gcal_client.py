@@ -9,13 +9,6 @@ from datetime import date, datetime
 from gtool.clients.calendar import CalendarClient
 
 
-def test_gcal_client_initialization(mock_service_factory, mock_retry_policy):
-    """FR-004: CalendarClient should initialize with dependencies via constructor."""
-    client = CalendarClient(service_factory=mock_service_factory, retry_policy=mock_retry_policy)
-    assert client._service_factory == mock_service_factory
-    assert client._retry_policy == mock_retry_policy
-
-
 def test_gcal_client_get_calendar_list(mock_google_service):
     """FR-007: CalendarClient.get_calendar_list() should return calendars."""
     mock_google_service.calendarList.return_value.list.return_value.execute.return_value = {

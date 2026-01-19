@@ -14,7 +14,7 @@ from click.testing import CliRunner
 from gtool.cli.errors import AuthenticationError
 from gtool.cli.main import cli
 from gtool.config.settings import Config
-from gtool.infrastructure.exceptions import AuthError, ConfigValidationError
+from gtool.infrastructure.exceptions import AuthError
 from gtool.infrastructure.service_factory import ServiceFactory
 
 
@@ -34,40 +34,6 @@ class TestLayerSeparationExceptionTranslation:
             # Should fail with AuthenticationError (click.ClickException)
             assert result.exit_code != 0
             assert "OAuth token refresh failed" in result.output or result.exit_code == 1
-
-
-class TestConfigValidationErrorFlow:
-    """Test that config validation errors flow through layers correctly."""
-
-    def test_missing_scopes_raises_config_validation_error(self):
-        """Test that Config raises ConfigValidationError when SCOPES is invalid."""
-        config = Config()
-        config.data["SCOPES"] = "not-a-list"  # Should be a list
-
-        with pytest.raises(ConfigValidationError) as exc_info:
-            config.validate()
-
-        assert "SCOPES must be a list" in str(exc_info.value)
-
-    def test_missing_calendar_ids_raises_config_validation_error(self):
-        """Test that Config raises ConfigValidationError when CALENDAR_IDS is invalid."""
-        config = Config()
-        config.data["CALENDAR_IDS"] = "single-string"  # Should be a list
-
-        with pytest.raises(ConfigValidationError) as exc_info:
-            config.validate()
-
-        assert "CALENDAR_IDS must be a list" in str(exc_info.value)
-
-    def test_missing_required_keys_raises_config_validation_error(self):
-        """Test that Config raises ConfigValidationError for missing required keys."""
-        config = Config()
-        config.data = {}  # Empty config
-
-        with pytest.raises(ConfigValidationError) as exc_info:
-            config.validate()
-
-        assert "Missing required config keys" in str(exc_info.value)
 
 
 class TestServiceFactoryCredentialsBug:

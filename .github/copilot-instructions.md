@@ -2,6 +2,31 @@ instead provide a prompt that can be used to do the changes later.
 
 # Copilot Instructions for calendarcli
 
+## Speckit Agents
+
+This project uses the speckit framework for spec-driven development. The following slash commands are available:
+
+- `/speckit.specify` - Create feature specifications from user descriptions
+- `/speckit.plan` - Generate implementation plans from specifications
+- `/speckit.tasks` - Create detailed task lists from plans
+- `/speckit.implement` - Execute implementation tasks step-by-step
+- `/speckit.analyze` - Analyze consistency across spec, plan, and tasks
+- `/speckit.checklist` - Generate verification checklists
+- `/speckit.clarify` - Clarify ambiguous requirements
+- `/speckit.constitution` - Manage project principles and constraints
+- `/speckit.taskstoissues` - Convert tasks to GitHub issues
+
+**Agent Definitions**: See `.github/agents/*.agent.md` for detailed agent instructions.
+
+**Workflow Example**:
+1. `/speckit.specify Add pagination and subject display to Gmail list`
+2. `/speckit.plan` (generates implementation plan)
+3. `/speckit.tasks` (creates task list)
+4. `/speckit.analyze` (validates consistency)
+5. `/speckit.implement` (executes tasks one by one)
+
+# Copilot Instructions for calendarcli
+
 ## Project Purpose
 
 `calendarcli` is a command-line tool for managing Google Calendar and Gmail. It enables users to:

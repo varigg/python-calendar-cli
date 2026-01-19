@@ -48,3 +48,13 @@ class TestConfig:
         with pytest.raises(ConfigValidationError) as exc_info:
             cfg.validate()
         assert "SCOPES must be a list" in str(exc_info.value)
+
+    def test_validate_raises_error_if_calendar_ids_not_list(self):
+        """Test that Config.validate raises ConfigValidationError if CALENDAR_IDS is not a list."""
+        from gtool.infrastructure.exceptions import ConfigValidationError
+
+        cfg = Config()
+        cfg.data["CALENDAR_IDS"] = "primary"  # String instead of list
+        with pytest.raises(ConfigValidationError) as exc_info:
+            cfg.validate()
+        assert "CALENDAR_IDS must be a list" in str(exc_info.value)
