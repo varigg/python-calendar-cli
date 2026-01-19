@@ -78,21 +78,21 @@ These tasks prepare the codebase for feature implementation.
 
 ### Implementation Tasks
 
-- [ ] T016 [P] [US2] Add `label` parameter to `list_messages()` method in `src/gtool/clients/gmail.py`
-- [ ] T017 [P] [US2] Implement label-to-query conversion logic in `src/gtool/clients/gmail.py` (convert `label="Work"` to `label:Work`)
-- [ ] T018 [US2] Add `--label` option to `gmail list` command in `src/gtool/cli/main.py`
-- [ ] T019 [US2] Implement default INBOX filter when no label/query specified in `src/gtool/clients/gmail.py`
-- [ ] T020 [US2] Add user-friendly error handling for non-existent labels in `src/gtool/cli/main.py`
+- [X] T016 [P] [US2] Add `label` parameter to `list_messages()` method in `src/gtool/clients/gmail.py`
+- [X] T017 [P] [US2] Implement label-to-query conversion logic in `src/gtool/clients/gmail.py` (convert `label="Work"` to `label:Work`)
+- [X] T018 [US2] Add `--label` option to `gmail list` command in `src/gtool/cli/main.py`
+- [X] T019 [US2] Implement default INBOX filter when no label/query specified in `src/gtool/clients/gmail.py`
+- [X] T020 [US2] Add user-friendly error handling for non-existent labels in `src/gtool/cli/main.py`
 
 ### Testing Tasks
 
-- [ ] T021 [US2] Unit test: label parameter converts to query syntax in `tests/test_gmail_client.py`
-- [ ] T022 [US2] Unit test: label and query are combined correctly in `tests/test_gmail_client.py`
-- [ ] T023 [US2] Unit test: default INBOX filter applied when no parameters in `tests/test_gmail_client.py`
-- [ ] T024 [US2] Unit test: multiple labels on single message in `tests/test_gmail_client.py`
-- [ ] T025 [US2] Integration test: CLI `--label Work` filters emails correctly in `tests/test_cli.py`
-- [ ] T026 [US2] Integration test: CLI `--label` with `--query` combines filters in `tests/test_cli.py`
-- [ ] T027 [US2] Integration test: error message for non-existent label in `tests/test_cli.py`
+- [X] T021 [US2] Unit test: label parameter converts to query syntax in `tests/test_gmail_client.py`
+- [X] T022 [US2] Unit test: label and query are combined correctly in `tests/test_gmail_client.py`
+- [X] T023 [US2] Unit test: default INBOX filter applied when no parameters in `tests/test_gmail_client.py`
+- [X] T024 [US2] Unit test: multiple labels on single message in `tests/test_gmail_client.py`
+- [X] T025 [US2] Integration test: CLI `--label Work` filters emails correctly in `tests/test_cli.py`
+- [X] T026 [US2] Integration test: CLI `--label` with `--query` combines filters in `tests/test_cli.py`
+- [X] T027 [US2] Integration test: error message for non-existent label in `tests/test_cli.py`
 
 ---
 

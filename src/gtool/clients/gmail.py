@@ -100,19 +100,32 @@ class GmailClient:
         if self._service is None and self._service_factory is not None:
             self._service = self._service_factory.build_service("gmail", "v1")
 
-    def list_messages(self, query: str = "", limit: int = 10, max_results: int = None) -> List[dict]:
-        """List Gmail messages matching a query.
+    def list_messages(
+        self, query: str = "", label: Optional[str] = None, limit: int = 10, max_results: int = None
+    ) -> List[dict]:
+        """List Gmail messages matching a query with optional label filtering.
 
-        Returns a list of message metadata matching the specified query.
+        Returns a list of message metadata matching the specified query and/or label.
         Each message includes id, threadId, snippet, and subject (extracted from headers).
 
-        Common query examples:
+        The query parameter supports Gmail's native search syntax:
         - "is:unread" - unread messages
         - "from:user@example.com" - messages from specific sender
         - "has:attachment" - messages with attachments
+        - "label:Work" - messages with Work label (can also use label parameter)
+
+        Label filtering (T016, T017 [US2]):
+        - If label provided, converts to 'label:LabelName' and adds to query
+        - If both label and query provided, they are combined with space
+        - If neither label nor query provided, defaults to 'label:INBOX' (T019 [US2])
+        - Examples:
+            label="Work" → query becomes "label:Work"
+            label="Work", query="is:unread" → "label:Work is:unread"
+            no parameters → "label:INBOX"
 
         Args:
-            query: Gmail search query (default: all messages).
+            query: Gmail search query (default: "").
+            label: Single label filter (default: None). Converted to label:X syntax.
             limit: Maximum number of messages to return (new parameter).
             max_results: Maximum number of messages to return (old parameter, for compatibility).
 
@@ -124,15 +137,21 @@ class GmailClient:
 
         Example:
             >>> client = GmailClient(service_factory=factory)
-            >>> unread = client.list_messages("is:unread", limit=20)
-            >>> for msg in unread:
-            ...     print(f"{msg['subject']}: {msg['snippet']}")
+            >>> # Filter by label
+            >>> work_emails = client.list_messages(label="Work", limit=20)
+            >>> # Combine label and query
+            >>> unread_work = client.list_messages(label="Work", query="is:unread")
+            >>> # Default INBOX
+            >>> inbox = client.list_messages()
         """
         # Support both old (max_results) and new (limit) parameter names
         actual_limit = max_results if max_results is not None else limit
 
+        # T016, T017 [US2]: Build query with label filtering
+        final_query = self._build_query_with_label(query, label)
+
         def fetch_messages():
-            return self._service.users().messages().list(userId="me", q=query, maxResults=actual_limit).execute()
+            return self._service.users().messages().list(userId="me", q=final_query, maxResults=actual_limit).execute()
 
         if self._retry_policy is not None:
             result = self._retry_policy.execute(fetch_messages)
@@ -177,6 +196,40 @@ class GmailClient:
                 enriched_messages.append({**msg, "subject": "(No Subject)"})
 
         return enriched_messages
+
+    def _build_query_with_label(self, query: str, label: Optional[str]) -> str:
+        """Build Gmail query with label filtering.
+
+        Implements label-to-query conversion and default INBOX behavior (T017, T019 [US2]).
+
+        Args:
+            query: User-provided search query
+            label: Optional label filter
+
+        Returns:
+            Final query string with label filter applied
+
+        Example:
+            >>> client._build_query_with_label("", "Work")
+            'label:Work'
+            >>> client._build_query_with_label("is:unread", "Work")
+            'label:Work is:unread'
+            >>> client._build_query_with_label("", None)
+            'label:INBOX'
+        """
+        # T017 [US2]: Convert label to query syntax
+        if label:
+            label_query = f"label:{label}"
+            # Combine with existing query if present
+            if query:
+                return f"{label_query} {query}"
+            return label_query
+
+        # T019 [US2]: Default to INBOX if no label or query specified
+        if not query:
+            return "label:INBOX"
+
+        return query
 
     def get_message(self, message_id: str, format_: str = "full") -> dict:
         """Get full message details including headers and body.

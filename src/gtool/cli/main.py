@@ -188,23 +188,32 @@ def gmail(config):
 
 @gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --limit 5")
 @click.option("--query", default="", help="Gmail search query (e.g., 'is:unread', 'from:user@example.com').")
+@click.option("--label", "label_filter", default=None, help="Filter by Gmail label (e.g., 'Work', 'Personal').")
 @click.option("--limit", default=10, show_default=True, help="Maximum number of messages to retrieve.")
 @click.option("--format", "format_", default="table", type=click.Choice(["table", "simple"]), help="Output format.")
 @click.pass_obj
 @translate_exceptions
-def gmail_list(config, query, limit, format_):
+def gmail_list(config, query, label_filter, limit, format_):
     """List Gmail messages matching the query with subject display.
 
     Displays messages in a formatted table including subject lines for quick
     identification. Use --format simple for legacy output without subjects.
 
+    Label Filtering (T018 [US2]):
+    - Use --label to filter by a specific Gmail label
+    - If neither --label nor --query specified, defaults to INBOX
+    - Can combine --label and --query for advanced filtering
+
     Examples:
         gtool gmail list --query "is:unread" --limit 5
-        gtool gmail list --query "from:user@example.com" --format simple
+        gtool gmail list --label "Work" --limit 10
+        gtool gmail list --label "Work" --query "is:unread"
+        gtool gmail list --format simple
     """
     try:
         client = create_gmail_client(config)
-        messages = client.list_messages(query=query, limit=limit)
+        # T018 [US2]: Pass label parameter to list_messages
+        messages = client.list_messages(query=query, label=label_filter, limit=limit)
 
         if not messages:
             click.echo(click.style("No messages found.", fg="yellow"))
