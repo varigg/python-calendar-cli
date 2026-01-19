@@ -28,13 +28,18 @@ Install as a user script:
 uv build
 
 # Install globally
-uv tool install dist/caltool-0.1.0-py3-none-any.whl
+uv tool install dist/gtool-0.2.0-py3-none-any.whl
 ```
 
 After installation, `gtool` is available from any shell:
 
 ```sh
 gtool --help
+```
+
+**Note**: The package is named `gtool` (not `caltool`). If you previously installed `caltool`, uninstall it first:
+```sh
+uv tool uninstall caltool
 ```
 
 ### Initial Setup
