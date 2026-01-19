@@ -4,10 +4,15 @@ import logging
 import click
 from colorama import Fore, Style
 
-from gtool.cli.decorators import prompt_for_config, translate_exceptions
+from gtool.cli.decorators import (
+    prompt_for_config,
+    translate_exceptions,
+    validate_count_param,
+)
 from gtool.cli.errors import CLIError, handle_cli_exception
 from gtool.cli.formatters import (
     format_calendars_table,
+    format_gmail_list_table,
     get_calendar_colors,
     pretty_print_slots,
     print_events_grouped_by_date,
@@ -186,21 +191,100 @@ def gmail(config):
         raise click.UsageError("Gmail scope not configured. Run 'gtool config' to add Gmail permissions.")
 
 
-@gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --limit 5")
-@click.option("--query", default="", help="Gmail search query (e.g., 'is:unread', 'from:user@example.com').")
-@click.option("--limit", default=10, show_default=True, help="Maximum number of messages to retrieve.")
+@gmail.command(
+    "list", help="List Gmail messages with subject display. Example: gtool gmail list --label Work --count 5"
+)
+@click.option(
+    "--query",
+    default="",
+    help="Gmail search query. Supports: 'is:unread', 'from:user@example.com', 'has:attachment', etc.",
+)
+@click.option(
+    "--label",
+    "label_filter",
+    default=None,
+    help="Filter by Gmail label (e.g., 'Work', 'Personal', 'Important'). Defaults to INBOX.",
+)
+@click.option(
+    "--count", default=10, type=int, help="Number of messages to retrieve (default: 10). Must be non-negative."
+)
+@click.option(
+    "--format",
+    "format_",
+    default="table",
+    type=click.Choice(["table", "simple"]),
+    help="Output format: 'table' shows subjects in formatted table (default), 'simple' shows legacy format.",
+)
 @click.pass_obj
 @translate_exceptions
-def gmail_list(config, query, limit):
-    """List Gmail messages matching the query."""
-    try:
-        client = create_gmail_client(config)
-        messages = client.list_messages(query=query, limit=limit)
+def gmail_list(config, query, label_filter, count, format_):
+    """List Gmail messages with subject display and filtering.
 
-        if not messages:
-            click.echo(click.style("No messages found.", fg="yellow"))
-            return
+    This command displays Gmail messages in a formatted table showing subjects,
+    previews, and message IDs. Messages can be filtered by label and/or search
+    query for focused workflows.
 
+    FEATURES:
+    \b
+    - Subject Display: See email titles for quick identification
+    - Label Filtering: Filter by Gmail labels (Work, Personal, etc.)
+    - Search Queries: Use Gmail's powerful search syntax
+    - Batch Control: Specify how many messages to retrieve
+    - Multiple Formats: Table (default) or simple text output
+
+    DEFAULT BEHAVIOR:
+    \b
+    - Shows INBOX messages when no filters specified
+    - Displays 10 messages by default
+    - Uses formatted table with subjects
+
+    EXAMPLES:
+    \b
+    # List unread work emails
+    gtool gmail list --label Work --query "is:unread" --count 5
+
+    # Quick inbox check with subjects
+    gtool gmail list
+
+    # Find emails from specific sender
+    gtool gmail list --query "from:boss@company.com" --count 20
+
+    # Combine label and search
+    gtool gmail list --label Important --query "has:attachment"
+
+    # Use legacy simple format
+    gtool gmail list --format simple
+
+    QUERY SYNTAX:
+    \b
+    - is:unread / is:read
+    - from:user@example.com
+    - to:user@example.com
+    - subject:"meeting notes"
+    - has:attachment
+    - after:2024/01/01
+    - before:2024/12/31
+
+    For more search operators, see: https://support.google.com/mail/answer/7190
+    """
+    # Handle count parameter with validation
+    actual_count = validate_count_param(count)
+
+    client = create_gmail_client(config)
+    # Pass label parameter to list_messages
+    messages = client.list_messages(query=query, label=label_filter, limit=actual_count)
+
+    if not messages:
+        click.echo(click.style("No messages found.", fg="yellow"))
+        return
+
+    # Use new table formatter with subject display (T007, T009 [US1])
+    if format_ == "table":
+        click.echo(click.style(f"\nFound {len(messages)} message(s):", fg="cyan"))
+        table = format_gmail_list_table(messages, include_subject=True)
+        click.echo(table)
+    else:
+        # Legacy simple format for backward compatibility
         click.echo(click.style(f"\nFound {len(messages)} message(s):", fg="cyan"))
         for i, msg in enumerate(messages, 1):
             msg_id = msg.get("id", "N/A")
@@ -210,8 +294,6 @@ def gmail_list(config, query, limit):
             click.echo(f"   Thread: {thread_id}")
             click.echo(f"   Preview: {snippet[:80]}...")
             click.echo("")
-    except CLIError as e:
-        handle_cli_exception(e)
 
 
 @gmail.command(
@@ -229,14 +311,11 @@ def gmail_list(config, query, limit):
 @translate_exceptions
 def gmail_show_message(config, message_id, format_):
     """Show details of a specific Gmail message."""
-    try:
-        client = create_gmail_client(config)
-        message = client.get_message(message_id=message_id)
+    client = create_gmail_client(config)
+    message = client.get_message(message_id=message_id)
 
-        click.echo(click.style(f"\nMessage ID: {message_id}", fg="cyan"))
-        click.echo(json.dumps(message, indent=2))
-    except CLIError as e:
-        handle_cli_exception(e)
+    click.echo(click.style(f"\nMessage ID: {message_id}", fg="cyan"))
+    click.echo(json.dumps(message, indent=2))
 
 
 @gmail.command("delete", help="Delete a Gmail message. Example: gtool gmail delete <message_id>")
@@ -246,14 +325,11 @@ def gmail_show_message(config, message_id, format_):
 @translate_exceptions
 def gmail_delete(config, message_id, confirm):
     """Delete a specific Gmail message."""
-    try:
-        if not confirm:
-            if not click.confirm(f"Are you sure you want to delete message {message_id}?"):
-                click.echo(click.style("Deletion cancelled.", fg="yellow"))
-                return
+    if not confirm:
+        if not click.confirm(f"Are you sure you want to delete message {message_id}?"):
+            click.echo(click.style("Deletion cancelled.", fg="yellow"))
+            return
 
-        client = create_gmail_client(config)
-        client.delete_message(message_id=message_id)
-        click.echo(click.style(f"Message {message_id} deleted successfully.", fg="green"))
-    except CLIError as e:
-        handle_cli_exception(e)
+    client = create_gmail_client(config)
+    client.delete_message(message_id=message_id)
+    click.echo(click.style(f"Message {message_id} deleted successfully.", fg="green"))

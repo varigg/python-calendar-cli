@@ -1,26 +1,32 @@
 """Shared test fixtures for the calendarcli test suite."""
 
-import datetime
 from unittest.mock import Mock
 
 import pytest
 
 from gtool.config.settings import Config
-from gtool.core.models import SearchParameters
-from gtool.core.scheduler import Scheduler
 
 
 @pytest.fixture
 def mock_config(tmp_path):
-    """Create a mock config with temporary file paths for testing."""
+    """Create a mock config with temporary file paths for testing.
+
+    Note: Gmail is enabled by default with readonly scope to support
+    Gmail command tests without individual setup. Tests requiring
+    gmail.modify scope should add it explicitly.
+    """
     config_data = {
         "CREDENTIALS_FILE": str(tmp_path / "credentials.json"),
         "TOKEN_FILE": str(tmp_path / "token.json"),
-        "SCOPES": ["scope"],
+        "SCOPES": [
+            "https://www.googleapis.com/auth/calendar",
+            "https://www.googleapis.com/auth/gmail.readonly",
+        ],
         "CALENDAR_IDS": ["primary"],
         "AVAILABILITY_START": "08:00",
         "AVAILABILITY_END": "18:00",
         "TIME_ZONE": "America/Los_Angeles",
+        "GMAIL_ENABLED": True,
     }
     config = Config()
     config.data = config_data
@@ -49,26 +55,6 @@ def busy_times():
         (datetime.fromisoformat("2025-05-02T09:00:00+00:00"), datetime.fromisoformat("2025-05-02T10:00:00+00:00")),
         (datetime.fromisoformat("2025-05-02T14:00:00+00:00"), datetime.fromisoformat("2025-05-02T15:00:00+00:00")),
     ]
-
-
-@pytest.fixture
-def scheduler():
-    """Create a configured scheduler instance for testing."""
-    from zoneinfo import ZoneInfo
-
-    tz = ZoneInfo("America/Los_Angeles")
-    search_params = SearchParameters(
-        start_datetime=datetime.datetime(2025, 5, 2, 0, 0, 0, tzinfo=tz),
-        end_datetime=datetime.datetime(2025, 5, 3, 23, 59, 59, tzinfo=tz),
-        availability_start=datetime.time(8, 0),
-        availability_end=datetime.time(18, 0),
-        duration=30,
-    )
-    return Scheduler(
-        client=Mock(),
-        search_params=search_params,
-        calendar_ids=["primary"],
-    )
 
 
 # ============================================================================
@@ -178,3 +164,88 @@ def mock_service_factory():
     mock_factory = Mock()
     mock_factory.build_service.return_value = Mock()
     return mock_factory
+
+
+# ============================================================================
+# Gmail List Enhancements Fixtures (Feature 007)
+# ============================================================================
+
+
+@pytest.fixture
+def gmail_message_with_subject():
+    """Sample Gmail message with subject header for testing."""
+    return {
+        "id": "msg123",
+        "threadId": "thread456",
+        "labelIds": ["INBOX", "UNREAD"],
+        "snippet": "This is a preview of the email content...",
+        "payload": {
+            "headers": [
+                {"name": "From", "value": "sender@example.com"},
+                {"name": "To", "value": "recipient@example.com"},
+                {"name": "Subject", "value": "Test Email Subject"},
+                {"name": "Date", "value": "Mon, 20 Jan 2025 10:30:00 +0000"},
+            ]
+        },
+        "internalDate": "1737369000000",
+    }
+
+
+@pytest.fixture
+def gmail_message_no_subject():
+    """Gmail message with blank/missing subject for testing."""
+    return {
+        "id": "msg789",
+        "threadId": "thread101",
+        "labelIds": ["INBOX"],
+        "snippet": "Email without a subject line...",
+        "payload": {
+            "headers": [
+                {"name": "From", "value": "another@example.com"},
+                {"name": "To", "value": "recipient@example.com"},
+                {"name": "Date", "value": "Mon, 20 Jan 2025 11:00:00 +0000"},
+            ]
+        },
+        "internalDate": "1737370800000",
+    }
+
+
+@pytest.fixture
+def gmail_message_unicode_subject():
+    """Gmail message with Unicode and special characters in subject."""
+    return {
+        "id": "msg999",
+        "threadId": "thread888",
+        "labelIds": ["INBOX", "IMPORTANT"],
+        "snippet": "Email with emoji and special chars...",
+        "payload": {
+            "headers": [
+                {"name": "From", "value": "unicode@example.com"},
+                {"name": "To", "value": "recipient@example.com"},
+                {"name": "Subject", "value": "🎉 Test Email with émoji & spëcial chars!"},
+                {"name": "Date", "value": "Mon, 20 Jan 2025 12:00:00 +0000"},
+            ]
+        },
+        "internalDate": "1737374400000",
+    }
+
+
+@pytest.fixture
+def gmail_message_long_subject():
+    """Gmail message with very long subject line for testing truncation."""
+    long_subject = "A" * 150  # 150 character subject
+    return {
+        "id": "msg456",
+        "threadId": "thread789",
+        "labelIds": ["INBOX"],
+        "snippet": "Email with very long subject...",
+        "payload": {
+            "headers": [
+                {"name": "From", "value": "long@example.com"},
+                {"name": "To", "value": "recipient@example.com"},
+                {"name": "Subject", "value": long_subject},
+                {"name": "Date", "value": "Mon, 20 Jan 2025 13:00:00 +0000"},
+            ]
+        },
+        "internalDate": "1737378000000",
+    }

@@ -2,6 +2,31 @@ instead provide a prompt that can be used to do the changes later.
 
 # Copilot Instructions for calendarcli
 
+## Speckit Agents
+
+This project uses the speckit framework for spec-driven development. The following slash commands are available:
+
+- `/speckit.specify` - Create feature specifications from user descriptions
+- `/speckit.plan` - Generate implementation plans from specifications
+- `/speckit.tasks` - Create detailed task lists from plans
+- `/speckit.implement` - Execute implementation tasks step-by-step
+- `/speckit.analyze` - Analyze consistency across spec, plan, and tasks
+- `/speckit.checklist` - Generate verification checklists
+- `/speckit.clarify` - Clarify ambiguous requirements
+- `/speckit.constitution` - Manage project principles and constraints
+- `/speckit.taskstoissues` - Convert tasks to GitHub issues
+
+**Agent Definitions**: See `.github/agents/*.agent.md` for detailed agent instructions.
+
+**Workflow Example**:
+1. `/speckit.specify Add pagination and subject display to Gmail list`
+2. `/speckit.plan` (generates implementation plan)
+3. `/speckit.tasks` (creates task list)
+4. `/speckit.analyze` (validates consistency)
+5. `/speckit.implement` (executes tasks one by one)
+
+# Copilot Instructions for calendarcli
+
 ## Project Purpose
 
 `calendarcli` is a command-line tool for managing Google Calendar and Gmail. It enables users to:
@@ -43,24 +68,35 @@ The tool is designed for productivity, automation, and integration into develope
 
 ### Calendar
 
-- `calendarcli free today+1 --duration 30 --pretty` - Find free time slots
-- `calendarcli get-calendars` - List all accessible calendars
-- `calendarcli show-events thursday+2` - Show upcoming events
-- `calendarcli config` - Interactive configuration setup
+- `gtool free today+1 --duration 30` - Find free time slots
+- `gtool get-calendars` - List all accessible calendars
+- `gtool show-events thursday+2` - Show upcoming events
+- `gtool config` - Interactive configuration setup
 
 ### Gmail
 
-- `calendarcli gmail list --query "is:unread" --limit 5` - List unread messages
-- `calendarcli gmail list --query "from:user@example.com"` - Search messages
-- `calendarcli gmail show-message <message_id>` - Show full message details
-- `calendarcli gmail show-message <message_id> --format minimal` - Show minimal format
-- `calendarcli gmail delete <message_id>` - Delete message (with confirmation)
-- `calendarcli gmail delete <message_id> --confirm` - Delete without confirmation
+- `gtool gmail list` - List messages with subject display (default: 10 from INBOX)
+- `gtool gmail list --query "is:unread" --count 5` - List unread messages
+- `gtool gmail list --label "Work"` - Filter by label
+- `gtool gmail list --label "Work" --query "is:unread"` - Combine filters
+- `gtool gmail list --query "from:user@example.com"` - Search by sender
+- `gtool gmail show-message <message_id>` - Show full message details
+- `gtool gmail show-message <message_id> --format minimal` - Show minimal format
+- `gtool gmail delete <message_id>` - Delete message (with confirmation)
+- `gtool gmail delete <message_id> --confirm` - Delete without confirmation
+
+### Gmail List Features
+
+- **Subject Display**: Messages shown in table with subjects, IDs, and previews
+- **Label Filtering**: `--label` option to filter by Gmail labels
+- **Batch Control**: `--count` option to specify number of messages (default: 10)
+- **Search Queries**: Full Gmail search syntax support via `--query`
+- **Output Formats**: `--format table` (default) or `--format simple` (legacy)
 
 ### Date Range Argument
 
 - Accepts intuitive strings: `today`, `today+N`, `tomorrow`, `monday+N`, etc.
-- Example: `calendarcli free today+2` finds free slots for today and the next two days.
+- Example: `gtool free today+2` finds free slots for today and the next two days.
 
 ## Coding Guidelines
 

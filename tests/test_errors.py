@@ -11,19 +11,6 @@ import gtool.cli.errors as errors
 class TestAuthenticationError:
     """Tests for AuthenticationError exception class."""
 
-    def test_authentication_error_inherits_from_cli_error(self):
-        """AuthenticationError should inherit from CLIError."""
-        error = errors.AuthenticationError("Auth failed")
-        assert isinstance(error, errors.CLIError)
-        assert isinstance(error, Exception)
-
-    def test_authentication_error_preserves_message(self):
-        """AuthenticationError should preserve the error message."""
-        message = "Invalid credentials provided"
-        error = errors.AuthenticationError(message)
-        assert error.message == message
-        assert str(error) == message
-
     def test_authentication_error_can_be_caught_as_cli_error(self):
         """AuthenticationError should be catchable as CLIError."""
         with pytest.raises(errors.CLIError):

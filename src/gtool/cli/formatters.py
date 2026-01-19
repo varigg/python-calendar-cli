@@ -10,6 +10,11 @@ from tabulate import tabulate
 
 from gtool.utils.datetime import format_event_time, get_event_date
 
+# Column width constants for Gmail list table formatting
+SUBJECT_MAX_LENGTH = 50
+SNIPPET_MAX_LENGTH = 60
+SUBJECT_TRUNCATE_DEFAULT = 80
+
 
 def format_slots_table(free_slots: list) -> str:
     """Return a formatted table of free slots as a string."""
@@ -132,3 +137,104 @@ def print_events_grouped_by_date(events, calendar_colors, calendar_names, timezo
             lines = format_event(event, calendar_colors, timezone, calendar_names)
             for line in lines:
                 click.echo(line)
+
+
+# ============================================================================
+# Gmail List Formatting (Feature 007)
+# ============================================================================
+
+
+def truncate_subject(subject: str, max_length: int = SUBJECT_TRUNCATE_DEFAULT) -> str:
+    """Truncate subject line to fit terminal width.
+
+    Args:
+        subject: Email subject line
+        max_length: Maximum length before truncation (default: SUBJECT_TRUNCATE_DEFAULT)
+
+    Returns:
+        Truncated subject with "..." suffix if too long
+
+    Example:
+        >>> truncate_subject("Short subject")
+        'Short subject'
+        >>> truncate_subject("A" * 100, max_length=50)
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...'
+    """
+    if len(subject) <= max_length:
+        return subject
+    return subject[: max_length - 3] + "..."
+
+
+def format_gmail_list_table(messages: list, include_subject: bool = True) -> str:
+    """Format Gmail messages as a colored table.
+
+    Formats a list of Gmail messages with optional subject display.
+    Subjects are truncated to fit terminal width and "(No Subject)" is
+    shown for blank subjects per FR-006.
+
+    Args:
+        messages: List of message dicts with id, threadId, snippet, and optionally subject
+        include_subject: Whether to include subject column (default: True)
+
+    Returns:
+        Formatted table string ready to print
+
+    Example:
+        >>> messages = [
+        ...     {"id": "msg1", "threadId": "t1", "subject": "Hello", "snippet": "Preview..."},
+        ...     {"id": "msg2", "threadId": "t2", "subject": "(No Subject)", "snippet": "Text..."}
+        ... ]
+        >>> table = format_gmail_list_table(messages)
+        >>> print(table)
+        # Outputs colored table with ID, Subject, Preview columns
+    """
+    if not messages:
+        return click.style("No messages found.", fg="yellow")
+
+    table_data = []
+    for i, msg in enumerate(messages, 1):
+        msg_id = msg.get("id", "N/A")
+        snippet = msg.get("snippet", "(no preview)")
+        subject = msg.get("subject", "(No Subject)")
+
+        # Truncate subject and snippet for display
+        subject_display = truncate_subject(subject, max_length=SUBJECT_MAX_LENGTH)
+        snippet_display = truncate_subject(snippet, max_length=SNIPPET_MAX_LENGTH)
+
+        if include_subject:
+            table_data.append(
+                [
+                    Fore.CYAN + str(i) + Style.RESET_ALL,
+                    Fore.BLUE + msg_id[:16] + "..." + Style.RESET_ALL
+                    if len(msg_id) > 16
+                    else Fore.BLUE + msg_id + Style.RESET_ALL,
+                    Fore.GREEN + subject_display + Style.RESET_ALL,
+                    Fore.YELLOW + snippet_display + Style.RESET_ALL,
+                ]
+            )
+        else:
+            # Legacy format without subject (backward compatibility)
+            table_data.append(
+                [
+                    Fore.CYAN + str(i) + Style.RESET_ALL,
+                    Fore.BLUE + msg_id + Style.RESET_ALL,
+                    Fore.YELLOW + snippet_display + Style.RESET_ALL,
+                ]
+            )
+
+    # Build headers based on include_subject flag
+    if include_subject:
+        headers = [
+            Fore.CYAN + "#" + Style.RESET_ALL,
+            Fore.CYAN + "Message ID" + Style.RESET_ALL,
+            Fore.CYAN + "Subject" + Style.RESET_ALL,
+            Fore.CYAN + "Preview" + Style.RESET_ALL,
+        ]
+    else:
+        headers = [
+            Fore.CYAN + "#" + Style.RESET_ALL,
+            Fore.CYAN + "Message ID" + Style.RESET_ALL,
+            Fore.CYAN + "Preview" + Style.RESET_ALL,
+        ]
+
+    return tabulate(table_data, headers=headers, tablefmt="grid")
