@@ -122,9 +122,9 @@ Pagination with offset is intentionally out of scope for this feature. Batch lis
 
 Test combinations for subjects, labels, and backward compatibility.
 
-- [ ] T046 [P] Integration test: subject display + label filter in `tests/test_cli.py`
-- [ ] T050 Integration test: backward compatibility with existing `--query` parameter in `tests/test_cli.py`
-- [ ] T051 Integration test: backward compatibility with legacy `--limit` parameter in `tests/test_cli.py`
+- [X] T046 [P] Integration test: subject display + label filter in `tests/test_cli.py`
+- [X] T050 Integration test: backward compatibility with existing `--query` parameter in `tests/test_cli.py`
+- [X] T051 Integration test: backward compatibility with legacy `--limit` parameter in `tests/test_cli.py`
 
 ---
 
@@ -132,12 +132,12 @@ Test combinations for subjects, labels, and backward compatibility.
 
 Final refinements and documentation.
 
-- [ ] T052 Add comprehensive error messages for all edge cases in `src/gtool/cli/errors.py`
-- [ ] T053 Update CLI help text and examples for `gmail list` command in `src/gtool/cli/main.py`
-- [ ] T054 [P] Add docstring examples to `list_messages()` in `src/gtool/clients/gmail.py`
-- [ ] T055 [P] Add docstring examples to `format_gmail_list_table()` in `src/gtool/cli/formatters.py`
-- [ ] T056 Update README with Gmail list feature usage examples
-- [ ] T057 Create migration guide for users switching from old list command
+- [X] T052 Add comprehensive error messages for all edge cases in `src/gtool/cli/errors.py`
+- [X] T053 Update CLI help text and examples for `gmail list` command in `src/gtool/cli/main.py`
+- [X] T054 [P] Add docstring examples to `list_messages()` in `src/gtool/clients/gmail.py`
+- [X] T055 [P] Add docstring examples to `format_gmail_list_table()` in `src/gtool/cli/formatters.py`
+- [X] T056 Update README with Gmail list feature usage examples
+- [X] T057 Create migration guide for users switching from old list command
 
 ---
 

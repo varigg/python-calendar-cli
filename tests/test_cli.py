@@ -427,25 +427,6 @@ def test_gmail_list_count_negative_validation(mock_config):
     assert "count must be non-negative" in result.output
 
 
-def test_gmail_list_limit_backward_compat(mock_config):
-    """T033 [Phase 5]: Test --limit still works for backward compatibility."""
-    mock_client = Mock()
-    mock_client.list_messages.return_value = [
-        {"id": f"msg{i}", "threadId": f"thread{i}", "subject": f"Subject {i}", "snippet": f"Preview {i}"}
-        for i in range(15)
-    ]
-
-    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
-        runner = CliRunner()
-        result = runner.invoke(cli, ["gmail", "list", "--limit", "15"], obj=mock_config)
-
-    assert result.exit_code == 0
-    # Verify list_messages was called with limit=15
-    mock_client.list_messages.assert_called_once()
-    call_kwargs = mock_client.list_messages.call_args[1]
-    assert call_kwargs["limit"] == 15
-
-
 def test_gmail_list_count_overrides_limit(mock_config):
     """T031 [Phase 5]: Test --count takes precedence over --limit."""
     mock_client = Mock()
@@ -474,3 +455,135 @@ def test_gmail_list_default_count(mock_config):
     # Verify default limit=10 was used
     call_kwargs = mock_client.list_messages.call_args[1]
     assert call_kwargs["limit"] == 10
+
+
+# ============================================================================
+# Phase 6 Tests: Integration & Cross-Story Tests
+# ============================================================================
+
+
+def test_gmail_list_subject_and_label_combined(mock_config):
+    """T046 [Phase 6]: Integration test for subject display + label filter."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {
+            "id": "msg1",
+            "threadId": "thread1",
+            "subject": "Work: Project Update",
+            "snippet": "The project is progressing...",
+        },
+        {
+            "id": "msg2",
+            "threadId": "thread2",
+            "subject": "Work: Meeting Notes",
+            "snippet": "Notes from today's meeting...",
+        },
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--label", "Work"], obj=mock_config)
+
+    assert result.exit_code == 0
+    output = clean_cli_output(result.output)
+
+    # Verify subjects are displayed
+    assert "Work: Project Update" in output
+    assert "Work: Meeting Notes" in output
+
+    # Verify label parameter was passed
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["label"] == "Work"
+
+
+def test_gmail_list_query_parameter_backward_compat(mock_config):
+    """T050 [Phase 6]: Test backward compatibility with existing --query parameter."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {
+            "id": "msg1",
+            "threadId": "thread1",
+            "subject": "Unread Message",
+            "snippet": "This is unread...",
+        },
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--query", "is:unread"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Verify query was passed correctly
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["query"] == "is:unread"
+
+    # Verify subjects are still displayed (US1 + backward compat)
+    output = clean_cli_output(result.output)
+    assert "Unread Message" in output
+
+
+def test_gmail_list_limit_parameter_backward_compat(mock_config):
+    """T051 [Phase 6]: Test backward compatibility with legacy --limit parameter."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {"id": f"msg{i}", "threadId": f"thread{i}", "subject": f"Subject {i}", "snippet": f"Preview {i}"}
+        for i in range(5)
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gmail", "list", "--limit", "5"], obj=mock_config)
+
+    assert result.exit_code == 0
+    # Verify --limit still works
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["limit"] == 5
+
+    # Verify subjects are displayed
+    output = clean_cli_output(result.output)
+    assert "Subject 0" in output
+
+
+def test_gmail_list_all_features_combined(mock_config):
+    """T046 [Phase 6]: Integration test for all features working together."""
+    mock_client = Mock()
+    mock_client.list_messages.return_value = [
+        {
+            "id": "msg1",
+            "threadId": "thread1",
+            "subject": "🎯 Important: Q4 Planning",
+            "snippet": "Let's discuss Q4 goals...",
+        },
+        {
+            "id": "msg2",
+            "threadId": "thread2",
+            "subject": "Team Sync Notes",
+            "snippet": "Notes from sync...",
+        },
+    ]
+
+    with patch("gtool.cli.main.create_gmail_client", return_value=mock_client):
+        runner = CliRunner()
+        # Combine label, query, count, and format
+        result = runner.invoke(
+            cli,
+            ["gmail", "list", "--label", "Work", "--query", "is:unread", "--count", "2", "--format", "table"],
+            obj=mock_config,
+        )
+
+    assert result.exit_code == 0
+
+    # Verify all parameters were passed
+    mock_client.list_messages.assert_called_once()
+    call_kwargs = mock_client.list_messages.call_args[1]
+    assert call_kwargs["label"] == "Work"
+    assert call_kwargs["query"] == "is:unread"
+    assert call_kwargs["limit"] == 2
+
+    # Verify output includes subjects and table format
+    output = clean_cli_output(result.output)
+    assert "Important: Q4 Planning" in output or "Q4 Planning" in output  # May be truncated
+    assert "Subject" in output  # Table header

@@ -24,23 +24,70 @@ During `caltool config`, you'll be asked if you want to enable Gmail access. Cho
 ### Gmail Commands
 
 ```sh
-# List unread messages (limit 5)
-caltool gmail list --query "is:unread" --limit 5
+# List unread messages with subjects displayed (NEW: Phase 3)
+gtool gmail list --query "is:unread" --count 5
+
+# Filter by label (NEW: Phase 4)
+gtool gmail list --label "Work" --count 10
+
+# Combine label and query filters (NEW: Phase 4)
+gtool gmail list --label "Work" --query "is:unread"
 
 # List messages from a specific sender
-caltool gmail list --query "from:user@example.com" --limit 10
+gtool gmail list --query "from:user@example.com" --count 10
+
+# Default: Shows INBOX with subjects in table format
+gtool gmail list
+
+# Legacy simple format (without subject table)
+gtool gmail list --format simple
 
 # Show full details of a message
-caltool gmail show-message <message_id>
+gtool gmail show-message <message_id>
 
 # Show message in minimal format
-caltool gmail show-message <message_id> --format minimal
+gtool gmail show-message <message_id> --format minimal
 
 # Delete a message (with confirmation)
-caltool gmail delete <message_id>
+gtool gmail delete <message_id>
 
 # Delete a message (skip confirmation)
-caltool gmail delete <message_id> --confirm
+gtool gmail delete <message_id> --confirm
+```
+
+### Gmail List Features (Feature 007)
+
+The `gmail list` command has been enhanced with:
+
+1. **Subject Display**: Email subjects are shown in a formatted table for quick identification
+   - Blank subjects display as "(No Subject)"
+   - Long subjects are truncated to fit terminal width
+   - Unicode and emoji fully supported
+
+2. **Label Filtering**: Filter emails by Gmail labels
+   - Use `--label` option: `gtool gmail list --label "Work"`
+   - Combines with search queries: `--label "Work" --query "is:unread"`
+   - Defaults to INBOX when no filters specified
+
+3. **Batch Size Control**: Configure how many messages to retrieve
+   - Use `--count` option: `gtool gmail list --count 20`
+   - Default is 10 messages
+   - Backward compatible with `--limit` option
+
+4. **Output Formats**:
+   - `--format table` (default): Formatted table with subjects
+   - `--format simple`: Legacy output without table
+
+**Examples**:
+```sh
+# Find unread work emails
+gtool gmail list --label "Work" --query "is:unread" --count 5
+
+# Quick inbox check (shows subjects in table)
+gtool gmail list
+
+# Get first 20 emails from a label
+gtool gmail list --label "Personal" --count 20
 ```
 
 ### Gmail Scope Requirements

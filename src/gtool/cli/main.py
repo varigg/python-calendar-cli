@@ -186,45 +186,82 @@ def gmail(config):
         raise click.UsageError("Gmail scope not configured. Run 'gtool config' to add Gmail permissions.")
 
 
-@gmail.command("list", help="List Gmail messages. Example: gtool gmail list --query 'is:unread' --count 5")
-@click.option("--query", default="", help="Gmail search query (e.g., 'is:unread', 'from:user@example.com').")
-@click.option("--label", "label_filter", default=None, help="Filter by Gmail label (e.g., 'Work', 'Personal').")
-@click.option(
-    "--count",
-    default=None,
-    type=int,
-    help="Number of messages to retrieve (default: 10). Alias for --limit.",
+@gmail.command(
+    "list", help="List Gmail messages with subject display. Example: gtool gmail list --label Work --count 5"
 )
 @click.option(
-    "--limit",
-    default=None,
-    type=int,
-    help="(Deprecated) Use --count instead. Maximum number of messages to retrieve.",
+    "--query",
+    default="",
+    help="Gmail search query. Supports: 'is:unread', 'from:user@example.com', 'has:attachment', etc.",
 )
-@click.option("--format", "format_", default="table", type=click.Choice(["table", "simple"]), help="Output format.")
+@click.option(
+    "--label",
+    "label_filter",
+    default=None,
+    help="Filter by Gmail label (e.g., 'Work', 'Personal', 'Important'). Defaults to INBOX.",
+)
+@click.option(
+    "--count", default=None, type=int, help="Number of messages to retrieve (default: 10). Must be non-negative."
+)
+@click.option("--limit", default=None, type=int, help="(Deprecated) Use --count instead.")
+@click.option(
+    "--format",
+    "format_",
+    default="table",
+    type=click.Choice(["table", "simple"]),
+    help="Output format: 'table' shows subjects in formatted table (default), 'simple' shows legacy format.",
+)
 @click.pass_obj
 @translate_exceptions
 def gmail_list(config, query, label_filter, count, limit, format_):
-    """List Gmail messages matching the query with subject display.
+    """List Gmail messages with subject display and filtering.
 
-    Displays messages in a formatted table including subject lines for quick
-    identification. Use --format simple for legacy output without subjects.
+    This command displays Gmail messages in a formatted table showing subjects,
+    previews, and message IDs. Messages can be filtered by label and/or search
+    query for focused workflows.
 
-    Batch Size (T029, T030 [Phase 5]):
-    - Use --count to specify number of messages (default: 10)
-    - --limit is deprecated but still supported for backward compatibility
-    - count must be non-negative (validation applied)
+    FEATURES:
+    \b
+    - Subject Display: See email titles for quick identification
+    - Label Filtering: Filter by Gmail labels (Work, Personal, etc.)
+    - Search Queries: Use Gmail's powerful search syntax
+    - Batch Control: Specify how many messages to retrieve
+    - Multiple Formats: Table (default) or simple text output
 
-    Label Filtering (T018 [US2]):
-    - Use --label to filter by a specific Gmail label
-    - If neither --label nor --query specified, defaults to INBOX
-    - Can combine --label and --query for advanced filtering
+    DEFAULT BEHAVIOR:
+    \b
+    - Shows INBOX messages when no filters specified
+    - Displays 10 messages by default
+    - Uses formatted table with subjects
 
-    Examples:
-        gtool gmail list --query "is:unread" --count 5
-        gtool gmail list --label "Work" --count 10
-        gtool gmail list --label "Work" --query "is:unread"
-        gtool gmail list --format simple
+    EXAMPLES:
+    \b
+    # List unread work emails
+    gtool gmail list --label Work --query "is:unread" --count 5
+
+    # Quick inbox check with subjects
+    gtool gmail list
+
+    # Find emails from specific sender
+    gtool gmail list --query "from:boss@company.com" --count 20
+
+    # Combine label and search
+    gtool gmail list --label Important --query "has:attachment"
+
+    # Use legacy simple format
+    gtool gmail list --format simple
+
+    QUERY SYNTAX:
+    \b
+    - is:unread / is:read
+    - from:user@example.com
+    - to:user@example.com
+    - subject:"meeting notes"
+    - has:attachment
+    - after:2024/01/01
+    - before:2024/12/31
+
+    For more search operators, see: https://support.google.com/mail/answer/7190
     """
     try:
         # T028, T029, T030 [Phase 5]: Handle count parameter with validation
